@@ -24,8 +24,8 @@ struct ngx_rbtree_node_s {
     ngx_rbtree_node_t     *left;
     ngx_rbtree_node_t     *right;
     ngx_rbtree_node_t     *parent;
-    u_char                 color;
-    u_char                 data;
+    u_char                 color;	//0黑,1红
+    u_char                 data;	//目前还没使用过
 };
 
 
