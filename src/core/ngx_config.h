@@ -91,9 +91,13 @@ typedef intptr_t        ngx_flag_t;
 
 
 #ifndef NGX_ALIGNMENT
+// 内存对齐单位
 #define NGX_ALIGNMENT   sizeof(unsigned long)    /* platform word */
 #endif
 
+/* 内存或指针对齐
+比如：ngx_align(1001, 4)==1004,这样就可以加快数据的读取速度，对齐的单位一般是内存访问粒度：2、4、8、16字节
+*/
 #define ngx_align(d, a)     (((d) + (a - 1)) & ~(a - 1))
 #define ngx_align_ptr(p, a)                                                   \
     (u_char *) (((uintptr_t) (p) + ((uintptr_t) a - 1)) & ~((uintptr_t) a - 1))

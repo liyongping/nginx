@@ -45,23 +45,23 @@ struct ngx_pool_large_s {
     void                 *alloc;
 };
 
-
+// 维护内存池数据块
 typedef struct {
-    u_char               *last;
-    u_char               *end;
-    ngx_pool_t           *next;
-    ngx_uint_t            failed;
+    u_char               *last;         // 当前内存分配结束位置，即下一段可分配内存的起始位置
+    u_char               *end;          // 内存池结束位置，也就是可分配内存的结束位置
+    ngx_pool_t           *next;	        // 指向下一块内存池
+    ngx_uint_t            failed;       // 统计该内存池不能满足分配请求的次数
 } ngx_pool_data_t;
 
-
+// 维护整个内存池信息，有点类似头部
 struct ngx_pool_s {
-    ngx_pool_data_t       d;
-    size_t                max;
-    ngx_pool_t           *current;
-    ngx_chain_t          *chain;
-    ngx_pool_large_t     *large;
-    ngx_pool_cleanup_t   *cleanup;
-    ngx_log_t            *log;
+    ngx_pool_data_t       d;            // 数据块
+    size_t                max;          // 剩下可用内存大小
+    ngx_pool_t           *current;      // 当前内存池
+    ngx_chain_t          *chain;        // 可以存储一系列的内存链
+    ngx_pool_large_t     *large;        // 相对比较打快的内存
+    ngx_pool_cleanup_t   *cleanup;      // 回收处理
+    ngx_log_t            *log;          // 日志
 };
 
 
@@ -75,6 +75,7 @@ typedef struct {
 void *ngx_alloc(size_t size, ngx_log_t *log);
 void *ngx_calloc(size_t size, ngx_log_t *log);
 
+// 创建一个大小为size的内存池
 ngx_pool_t *ngx_create_pool(size_t size, ngx_log_t *log);
 void ngx_destroy_pool(ngx_pool_t *pool);
 void ngx_reset_pool(ngx_pool_t *pool);
@@ -83,6 +84,7 @@ void *ngx_palloc(ngx_pool_t *pool, size_t size);
 void *ngx_pnalloc(ngx_pool_t *pool, size_t size);
 void *ngx_pcalloc(ngx_pool_t *pool, size_t size);
 void *ngx_pmemalign(ngx_pool_t *pool, size_t size, size_t alignment);
+// 释放池中的大块数据
 ngx_int_t ngx_pfree(ngx_pool_t *pool, void *p);
 
 
