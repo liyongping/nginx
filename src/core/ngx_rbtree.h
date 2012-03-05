@@ -1,4 +1,4 @@
-
+ï»¿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -24,8 +24,8 @@ struct ngx_rbtree_node_s {
     ngx_rbtree_node_t     *left;
     ngx_rbtree_node_t     *right;
     ngx_rbtree_node_t     *parent;
-    u_char                 color;	//0ºÚ,1ºì
-    u_char                 data;	//Ä¿Ç°»¹Ã»Ê¹ÓÃ¹ý
+    u_char                 color;	//0é»‘,1çº¢
+    u_char                 data;	//ç›®å‰è¿˜æ²¡ä½¿ç”¨è¿‡
 };
 
 
@@ -35,12 +35,12 @@ typedef void (*ngx_rbtree_insert_pt) (ngx_rbtree_node_t *root,
     ngx_rbtree_node_t *node, ngx_rbtree_node_t *sentinel);
 
 struct ngx_rbtree_s {
-    ngx_rbtree_node_t     *root;	//Ê÷¸ù
-    ngx_rbtree_node_t     *sentinel;//ÉÚ±ønil
+    ngx_rbtree_node_t     *root;	//æ ‘æ ¹
+    ngx_rbtree_node_t     *sentinel;//å“¨å…µnil
     ngx_rbtree_insert_pt   insert;
 };
 
-// ºìºÚÊ÷³õÊ¼µÄ¸ùÒ»¿ªÊ¼ÉèÖÃÎªÉÚ±ø½áµã.
+// çº¢é»‘æ ‘åˆå§‹çš„æ ¹ä¸€å¼€å§‹è®¾ç½®ä¸ºå“¨å…µç»“ç‚¹.
 #define ngx_rbtree_init(tree, s, i)                                           \
     ngx_rbtree_sentinel_init(s);                                              \
     (tree)->root = s;                                                         \
@@ -58,18 +58,18 @@ void ngx_rbtree_insert_timer_value(ngx_rbtree_node_t *root,
     ngx_rbtree_node_t *node, ngx_rbtree_node_t *sentinel);
 
 
-#define ngx_rbt_red(node)               ((node)->color = 1)		//È¾ºìÉ«
-#define ngx_rbt_black(node)             ((node)->color = 0)		//È¾ºÚÉ«
-#define ngx_rbt_is_red(node)            ((node)->color)			//ÅÐ¶ÏÊÇ·ñÊÇºìÉ«½Úµã
-#define ngx_rbt_is_black(node)          (!ngx_rbt_is_red(node))	//ÅÐ¶ÏÊÇ·ñÊÇºÚÉ«½Úµã
+#define ngx_rbt_red(node)               ((node)->color = 1)		//æŸ“çº¢è‰²
+#define ngx_rbt_black(node)             ((node)->color = 0)		//æŸ“é»‘è‰²
+#define ngx_rbt_is_red(node)            ((node)->color)			//åˆ¤æ–­æ˜¯å¦æ˜¯çº¢è‰²èŠ‚ç‚¹
+#define ngx_rbt_is_black(node)          (!ngx_rbt_is_red(node))	//åˆ¤æ–­æ˜¯å¦æ˜¯é»‘è‰²èŠ‚ç‚¹
 #define ngx_rbt_copy_color(n1, n2)      (n1->color = n2->color)
 
 
 /* a sentinel must be black */
-// ÉÚ±ø½áµã±ØÐëÎªºÚÉ«
+// å“¨å…µç»“ç‚¹å¿…é¡»ä¸ºé»‘è‰²
 #define ngx_rbtree_sentinel_init(node)  ngx_rbt_black(node)
 
-// ÕÒµ½node×î×óÏÂµÄnode
+// æ‰¾åˆ°nodeæœ€å·¦ä¸‹çš„node
 static ngx_inline ngx_rbtree_node_t *
 ngx_rbtree_min(ngx_rbtree_node_t *node, ngx_rbtree_node_t *sentinel)
 {

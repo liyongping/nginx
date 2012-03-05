@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -42,7 +42,7 @@ ngx_list_push(ngx_list_t *l)
     ngx_list_part_t  *last;
 
     last = l->last;
-
+    // 如果空间不够，申请一个新的list-part
     if (last->nelts == l->nalloc) {
 
         /* the last part is full, allocate a new list part */
@@ -51,7 +51,7 @@ ngx_list_push(ngx_list_t *l)
         if (last == NULL) {
             return NULL;
         }
-
+        // 大小、长度跟原来的list-part一样
         last->elts = ngx_palloc(l->pool, l->nalloc * l->size);
         if (last->elts == NULL) {
             return NULL;
@@ -65,7 +65,7 @@ ngx_list_push(ngx_list_t *l)
     }
 
     elt = (char *) last->elts + l->size * last->nelts;
-    last->nelts++;
+    last->nelts++;  // 使用掉了一个，+1
 
-    return elt;
+    return elt;     // 返回新加入列表元素的地址，外面就可用通过这个地址进行存储了...
 }

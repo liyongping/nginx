@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -88,11 +88,11 @@ struct ngx_command_s {
 
 
 struct ngx_open_file_s {
-    ngx_fd_t              fd;
-    ngx_str_t             name;
+    ngx_fd_t              fd;       // 文件描述符
+    ngx_str_t             name;     // 文件名
 
-    u_char               *buffer;
-    u_char               *pos;
+    u_char               *buffer;   // 文件缓冲
+    u_char               *pos;      // 文件当前位置
     u_char               *last;
 
 #if 0

@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -47,7 +47,7 @@ ngx_module_t  ngx_errlog_module = {
     NGX_MODULE_V1_PADDING
 };
 
-
+// 全局变量
 static ngx_log_t        ngx_log;
 static ngx_open_file_t  ngx_log_file;
 ngx_uint_t              ngx_use_stderr = 1;
@@ -281,6 +281,7 @@ ngx_log_init(u_char *prefix)
     nlen = ngx_strlen(name);
 
     if (nlen == 0) {
+        // 如果没有设置日志输出文件，就默认采用标准错误输出流
         ngx_log_file.fd = ngx_stderr;
         return &ngx_log;
     }
@@ -304,7 +305,7 @@ ngx_log_init(u_char *prefix)
             plen = 0;
 #endif
         }
-
+        // 检查是否有路径前缀，如有就加到前面，使用绝对路径上的日志文件，如果没有，使用当前目录下的日志文件
         if (plen) {
             name = malloc(plen + nlen + 2);
             if (name == NULL) {
@@ -322,7 +323,7 @@ ngx_log_init(u_char *prefix)
             p = name;
         }
     }
-
+    // 只写追加方式打开，如果不存在则创建
     ngx_log_file.fd = ngx_open_file(name, NGX_FILE_APPEND,
                                     NGX_FILE_CREATE_OR_OPEN,
                                     NGX_FILE_DEFAULT_ACCESS);

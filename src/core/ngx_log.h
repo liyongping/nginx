@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -11,8 +11,11 @@
 
 #include <ngx_config.h>
 #include <ngx_core.h>
-
-
+/* 日志级别，9级
+注意:
+    在正式使用中，建议配置在3级以下，因为级别数字越大，产生的告警日志越多。日志越多，对于调试分
+    析非常有用，但在正式使用过程中，日志数量产生太多，会写磁盘IO，对性能会造成极大的影响
+*/
 #define NGX_LOG_STDERR            0
 #define NGX_LOG_EMERG             1
 #define NGX_LOG_ALERT             2
@@ -22,7 +25,7 @@
 #define NGX_LOG_NOTICE            6
 #define NGX_LOG_INFO              7
 #define NGX_LOG_DEBUG             8
-
+// 日志类别
 #define NGX_LOG_DEBUG_CORE        0x010
 #define NGX_LOG_DEBUG_ALLOC       0x020
 #define NGX_LOG_DEBUG_MUTEX       0x040
@@ -46,8 +49,8 @@ typedef u_char *(*ngx_log_handler_pt) (ngx_log_t *log, u_char *buf, size_t len);
 
 
 struct ngx_log_s {
-    ngx_uint_t           log_level;
-    ngx_open_file_t     *file;
+    ngx_uint_t           log_level;     // 日志记录的级别
+    ngx_open_file_t     *file;          // 日志记录文件句柄
 
     ngx_atomic_uint_t    connection;
 
@@ -218,7 +221,7 @@ void ngx_cdecl ngx_log_debug_core(ngx_log_t *log, ngx_err_t err,
 #endif
 
 /*********************************/
-
+// 初始化日志服务，prefix为日志路径前缀
 ngx_log_t *ngx_log_init(u_char *prefix);
 ngx_log_t *ngx_log_create(ngx_cycle_t *cycle, ngx_str_t *name);
 char *ngx_log_set_levels(ngx_conf_t *cf, ngx_log_t *log);

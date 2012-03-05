@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -32,13 +32,13 @@ ngx_queue_middle(ngx_queue_t *queue)
 
         next = ngx_queue_next(next);
 
-        if (next == ngx_queue_last(queue)) {
+        if (next == ngx_queue_last(queue)) {    // 偶数个节点，在此返回后半个队列的第一个节点
             return middle;
         }
 
         next = ngx_queue_next(next);
 
-        if (next == ngx_queue_last(queue)) {
+        if (next == ngx_queue_last(queue)) {    // 奇数个节点，在此返回中间节点
             return middle;
         }
     }
