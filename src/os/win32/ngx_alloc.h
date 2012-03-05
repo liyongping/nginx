@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -12,9 +12,9 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-// �����ڴ棬�����ǵ���malloc
+// 申请内存，本质是调用malloc
 void *ngx_alloc(size_t size, ngx_log_t *log);
-// �����ڴ棬���ҳ�ʼ��Ϊ0
+// 申请内存，并且初始化为0
 void *ngx_calloc(size_t size, ngx_log_t *log);
 
 #define ngx_free          free

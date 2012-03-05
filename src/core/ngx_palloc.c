@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -28,7 +28,7 @@ ngx_create_pool(size_t size, ngx_log_t *log)
     p->d.next = NULL;
     p->d.failed = 0;
 
-    size = size - sizeof(ngx_pool_t);// ��������ڴ��С
+    size = size - sizeof(ngx_pool_t);// 计算可用内存大小
     p->max = (size < NGX_MAX_ALLOC_FROM_POOL) ? size : NGX_MAX_ALLOC_FROM_POOL;
 
     p->current = p;
@@ -47,7 +47,7 @@ ngx_destroy_pool(ngx_pool_t *pool)
     ngx_pool_t          *p, *n;
     ngx_pool_large_t    *l;
     ngx_pool_cleanup_t  *c;
-    // ������������
+    // 先做清理工作
     for (c = pool->cleanup; c; c = c->next) {
         if (c->handler) {
             ngx_log_debug1(NGX_LOG_DEBUG_ALLOC, pool->log, 0,
@@ -55,7 +55,7 @@ ngx_destroy_pool(ngx_pool_t *pool)
             c->handler(c->data);
         }
     }
-    // �����ͷŴ���ڴ�
+    // 接着释放大块内存
     for (l = pool->large; l; l = l->next) {
 
         ngx_log_debug1(NGX_LOG_DEBUG_ALLOC, pool->log, 0, "free: %p", l->alloc);
@@ -82,7 +82,7 @@ ngx_destroy_pool(ngx_pool_t *pool)
     }
 
 #endif
-    // �ͷ�С���ڴ�
+    // 释放小块内存
     for (p = pool, n = pool->d.next; /* void */; p = n, n = n->d.next) {
         ngx_free(p);
 
@@ -92,7 +92,7 @@ ngx_destroy_pool(ngx_pool_t *pool)
     }
 }
 
-// �����ڴ棬ֻ�ͷŴ���ڴ棬С����Ȼ����
+// 重置内存，只释放大块内存，小的仍然持有
 void
 ngx_reset_pool(ngx_pool_t *pool)
 {
@@ -124,7 +124,7 @@ ngx_palloc(ngx_pool_t *pool, size_t size)
         p = pool->current;
 
         do {
-            // �����ڴ�ָ�룬�ӿ��ȡ�ٶ�
+            // 对齐内存指针，加快存取速度
             m = ngx_align_ptr(p->d.last, NGX_ALIGNMENT);
 
             if ((size_t) (p->d.end - m) >= size) {
@@ -149,27 +149,27 @@ ngx_pnalloc(ngx_pool_t *pool, size_t size)
 {
     u_char      *m;
     ngx_pool_t  *p;
-    // ����Ƿ��б�Ҫ�������ڴ�
+    // 检查是否有必要申请大块内存
     if (size <= pool->max) {
 
         p = pool->current;
-        // ��鵱ǰ�����ڴ��Ƿ��㹻������㹻���ڵ�ǰ���з��䣬��������ͳ�������һ�����з���
+        // 检查当前池中内存是否足够，如果足够就在当前池中分配，如果不够就尝试在下一个池中分配
         do {
             m = p->d.last;
-            // �㹻
+            // 足够
             if ((size_t) (p->d.end - m) >= size) {
                 p->d.last = m + size;
 
                 return m;
             }
-            // ������ָ����һ����
+            // 不够，指向下一个池
             p = p->d.next;
 
         } while (p);
-        // �ڴ���еĿռ�ľ�����������һ����
+        // 内存池中的空间耗尽，重新申请一个池
         return ngx_palloc_block(pool, size);
     }
-    // ��Ҫ������ڴ�Ƚϴ���ôֱ���������ڴ�
+    // 需要申请的内存比较大，那么直接申请大块内存
     return ngx_palloc_large(pool, size);
 }
 
@@ -180,9 +180,9 @@ ngx_palloc_block(ngx_pool_t *pool, size_t size)
     u_char      *m;
     size_t       psize;
     ngx_pool_t  *p, *new, *current;
-    // ���㵱ǰ�ش�С
+    // 计算当前池大小
     psize = (size_t) (pool->d.end - (u_char *) pool);
-    // ��������һ��ͬ����С�ĳ�
+    // 重新申请一个同样大小的池
     m = ngx_memalign(NGX_POOL_ALIGNMENT, psize, pool->log);
     if (m == NULL) {
         return NULL;
@@ -190,24 +190,24 @@ ngx_palloc_block(ngx_pool_t *pool, size_t size)
 
     new = (ngx_pool_t *) m;
 
-    new->d.end = m + psize;     // ����end����β
+    new->d.end = m + psize;     // 调整end到结尾
     new->d.next = NULL;
     new->d.failed = 0;
 
     m += sizeof(ngx_pool_data_t);
-    m = ngx_align_ptr(m, NGX_ALIGNMENT);// ����
-    new->d.last = m + size;             // last���õ������ڴ濪ʼ����Ԥ�ȶ������
+    m = ngx_align_ptr(m, NGX_ALIGNMENT);// 对齐
+    new->d.last = m + size;             // last设置到可用内存开始处（预先对齐过）
 
     current = pool->current;
-    // �����������ҵ����һ��failed����4�Ľڵ�
+    // 遍历链表，找到最后一个failed大于4的节点
     for (p = current; p->d.next; p = p->d.next) {
-        if (p->d.failed++ > 4) {    // ���ʧ�ܵĴ�������4�Σ���ôĬ�ϵ�ǰ�ĳ�������һ��
+        if (p->d.failed++ > 4) {    // 如果失败的次数大于4次，那么默认当前的池往后移一个
             current = p->d.next;
         }
     }
 
-    p->d.next = new;// ��������ĳعҵ�������β��
-    // ���currentΪ�գ���currentΪ�½��ĳ�
+    p->d.next = new;// 把新申请的池挂到池链表尾部
+    // 如果current为空，则current为新建的池
     pool->current = current ? current : new;
 
     return m;
@@ -244,7 +244,7 @@ ngx_palloc_large(ngx_pool_t *pool, size_t size)
         ngx_free(p);
         return NULL;
     }
-    // ����ÿռ��ֱ�Ӳ��뵽large������ͷ��
+    // 申请好空间后，直接插入到large链表的头部
     large->alloc = p;
     large->next = pool->large;
     pool->large = large;

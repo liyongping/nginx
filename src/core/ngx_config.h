@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -91,12 +91,12 @@ typedef intptr_t        ngx_flag_t;
 
 
 #ifndef NGX_ALIGNMENT
-// �ڴ���뵥λ
+// 内存对齐单位
 #define NGX_ALIGNMENT   sizeof(unsigned long)    /* platform word */
 #endif
 
-/* �ڴ��ָ�����
-���磺ngx_align(1001, 4)==1004,�����Ϳ��Լӿ����ݵĶ�ȡ�ٶȣ�����ĵ�λһ�����ڴ�������ȣ�2��4��8��16�ֽ�
+/* 内存或指针对齐
+比如：ngx_align(1001, 4)==1004,这样就可以加快数据的读取速度，对齐的单位一般是内存访问粒度：2、4、8、16字节
 */
 #define ngx_align(d, a)     (((d) + (a - 1)) & ~(a - 1))
 #define ngx_align_ptr(p, a)                                                   \

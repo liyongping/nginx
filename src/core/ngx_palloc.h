@@ -1,4 +1,4 @@
-
+ï»¿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -45,23 +45,23 @@ struct ngx_pool_large_s {
     void                 *alloc;
 };
 
-// Î¬»¤ÄÚ´æ³ØÊı¾İ¿é
+// ç»´æŠ¤å†…å­˜æ± æ•°æ®å—
 typedef struct {
-    u_char               *last;         // µ±Ç°ÄÚ´æ·ÖÅä½áÊøÎ»ÖÃ£¬¼´ÏÂÒ»¶Î¿É·ÖÅäÄÚ´æµÄÆğÊ¼Î»ÖÃ
-    u_char               *end;          // ÄÚ´æ³Ø½áÊøÎ»ÖÃ£¬Ò²¾ÍÊÇ¿É·ÖÅäÄÚ´æµÄ½áÊøÎ»ÖÃ
-    ngx_pool_t           *next;	        // Ö¸ÏòÏÂÒ»¿éÄÚ´æ³Ø
-    ngx_uint_t            failed;       // Í³¼Æ¸ÃÄÚ´æ³Ø²»ÄÜÂú×ã·ÖÅäÇëÇóµÄ´ÎÊı
+    u_char               *last;         // å½“å‰å†…å­˜åˆ†é…ç»“æŸä½ç½®ï¼Œå³ä¸‹ä¸€æ®µå¯åˆ†é…å†…å­˜çš„èµ·å§‹ä½ç½®
+    u_char               *end;          // å†…å­˜æ± ç»“æŸä½ç½®ï¼Œä¹Ÿå°±æ˜¯å¯åˆ†é…å†…å­˜çš„ç»“æŸä½ç½®
+    ngx_pool_t           *next;	        // æŒ‡å‘ä¸‹ä¸€å—å†…å­˜æ± 
+    ngx_uint_t            failed;       // ç»Ÿè®¡è¯¥å†…å­˜æ± ä¸èƒ½æ»¡è¶³åˆ†é…è¯·æ±‚çš„æ¬¡æ•°
 } ngx_pool_data_t;
 
-// Î¬»¤Õû¸öÄÚ´æ³ØĞÅÏ¢£¬ÓĞµãÀàËÆÍ·²¿
+// ç»´æŠ¤æ•´ä¸ªå†…å­˜æ± ä¿¡æ¯ï¼Œæœ‰ç‚¹ç±»ä¼¼å¤´éƒ¨
 struct ngx_pool_s {
-    ngx_pool_data_t       d;            // Êı¾İ¿é
-    size_t                max;          // Ê£ÏÂ¿ÉÓÃÄÚ´æ´óĞ¡
-    ngx_pool_t           *current;      // µ±Ç°ÄÚ´æ³Ø
-    ngx_chain_t          *chain;        // ¿ÉÒÔ´æ´¢Ò»ÏµÁĞµÄÄÚ´æÁ´
-    ngx_pool_large_t     *large;        // Ïà¶Ô±È½Ï´ò¿ìµÄÄÚ´æ
-    ngx_pool_cleanup_t   *cleanup;      // »ØÊÕ´¦Àí
-    ngx_log_t            *log;          // ÈÕÖ¾
+    ngx_pool_data_t       d;            // æ•°æ®å—
+    size_t                max;          // å‰©ä¸‹å¯ç”¨å†…å­˜å¤§å°
+    ngx_pool_t           *current;      // å½“å‰å†…å­˜æ± 
+    ngx_chain_t          *chain;        // å¯ä»¥å­˜å‚¨ä¸€ç³»åˆ—çš„å†…å­˜é“¾
+    ngx_pool_large_t     *large;        // ç›¸å¯¹æ¯”è¾ƒæ‰“å¿«çš„å†…å­˜
+    ngx_pool_cleanup_t   *cleanup;      // å›æ”¶å¤„ç†
+    ngx_log_t            *log;          // æ—¥å¿—
 };
 
 
@@ -75,7 +75,7 @@ typedef struct {
 void *ngx_alloc(size_t size, ngx_log_t *log);
 void *ngx_calloc(size_t size, ngx_log_t *log);
 
-// ´´½¨Ò»¸ö´óĞ¡ÎªsizeµÄÄÚ´æ³Ø
+// åˆ›å»ºä¸€ä¸ªå¤§å°ä¸ºsizeçš„å†…å­˜æ± 
 ngx_pool_t *ngx_create_pool(size_t size, ngx_log_t *log);
 void ngx_destroy_pool(ngx_pool_t *pool);
 void ngx_reset_pool(ngx_pool_t *pool);
@@ -84,7 +84,7 @@ void *ngx_palloc(ngx_pool_t *pool, size_t size);
 void *ngx_pnalloc(ngx_pool_t *pool, size_t size);
 void *ngx_pcalloc(ngx_pool_t *pool, size_t size);
 void *ngx_pmemalign(ngx_pool_t *pool, size_t size, size_t alignment);
-// ÊÍ·Å³ØÖĞµÄ´ó¿éÊı¾İ
+// é‡Šæ”¾æ± ä¸­çš„å¤§å—æ•°æ®
 ngx_int_t ngx_pfree(ngx_pool_t *pool, void *p);
 
 
