@@ -76,8 +76,8 @@
 
 
 struct ngx_command_s {
-    ngx_str_t             name;
-    ngx_uint_t            type;
+    ngx_str_t             name; // 命令名
+    ngx_uint_t            type; // 命令类型
     char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
     ngx_uint_t            conf;
     ngx_uint_t            offset;
@@ -104,36 +104,37 @@ struct ngx_open_file_s {
 #endif
 };
 
-
+// 用来初始化ngx_module_s前7个字段
 #define NGX_MODULE_V1          0, 0, 0, 0, 0, 0, 1
+// 用来初始化ngx_module_s最后8个字段，字段默认都0的才这样初始化
 #define NGX_MODULE_V1_PADDING  0, 0, 0, 0, 0, 0, 0, 0
 
 struct ngx_module_s {
     ngx_uint_t            ctx_index;
-    ngx_uint_t            index;
+    ngx_uint_t            index;    // 模块的索引
 
     ngx_uint_t            spare0;
     ngx_uint_t            spare1;
     ngx_uint_t            spare2;
     ngx_uint_t            spare3;
 
-    ngx_uint_t            version;
+    ngx_uint_t            version;  // 版本，现在默认还是1
 
-    void                 *ctx;
-    ngx_command_t        *commands;
-    ngx_uint_t            type;
+    void                 *ctx;      // 该模块的上下文，每种的模块都有不同的上下文
+    ngx_command_t        *commands; // 该模块的命令集，指向一个ngx_command_t结构数组
+    ngx_uint_t            type;     // 该模块的种类，为core/event/http/mail中的一种
 
-    ngx_int_t           (*init_master)(ngx_log_t *log);
+    ngx_int_t           (*init_master)(ngx_log_t *log);     // 初始化master
 
-    ngx_int_t           (*init_module)(ngx_cycle_t *cycle);
+    ngx_int_t           (*init_module)(ngx_cycle_t *cycle); // 初始化模块
 
-    ngx_int_t           (*init_process)(ngx_cycle_t *cycle);
-    ngx_int_t           (*init_thread)(ngx_cycle_t *cycle);
-    void                (*exit_thread)(ngx_cycle_t *cycle);
-    void                (*exit_process)(ngx_cycle_t *cycle);
+    ngx_int_t           (*init_process)(ngx_cycle_t *cycle);// 初始化进程
+    ngx_int_t           (*init_thread)(ngx_cycle_t *cycle); // 初始化进程的时候调用
+    void                (*exit_thread)(ngx_cycle_t *cycle); // 退出线程的时候调用
+    void                (*exit_process)(ngx_cycle_t *cycle);// 退出进程的时候调用
 
-    void                (*exit_master)(ngx_cycle_t *cycle);
-
+    void                (*exit_master)(ngx_cycle_t *cycle); // 推出master的时候调用
+    // 以下基本为保留位
     uintptr_t             spare_hook0;
     uintptr_t             spare_hook1;
     uintptr_t             spare_hook2;
@@ -146,9 +147,9 @@ struct ngx_module_s {
 
 
 typedef struct {
-    ngx_str_t             name;
-    void               *(*create_conf)(ngx_cycle_t *cycle);
-    char               *(*init_conf)(ngx_cycle_t *cycle, void *conf);
+    ngx_str_t             name; // 模块名
+    void               *(*create_conf)(ngx_cycle_t *cycle);             // 创建配置的callback
+    char               *(*init_conf)(ngx_cycle_t *cycle, void *conf);   // 初始化配置的callback
 } ngx_core_module_t;
 
 

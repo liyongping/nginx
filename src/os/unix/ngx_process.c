@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -12,10 +12,10 @@
 
 
 typedef struct {
-    int     signo;
-    char   *signame;
-    char   *name;
-    void  (*handler)(int signo);
+    int     signo;  // 信号值
+    char   *signame;// 信号名
+    char   *name;   // 信号可读名
+    void  (*handler)(int signo);// 信号处理函数
 } ngx_signal_t;
 
 

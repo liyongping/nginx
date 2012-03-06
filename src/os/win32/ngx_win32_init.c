@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -67,7 +67,7 @@ ngx_os_init(ngx_log_t *log)
     SYSTEM_INFO  si;
 
     /* get Windows version */
-
+    // 获取windows版本
     ngx_memzero(&osvi, sizeof(OSVERSIONINFOEX));
     osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
 
@@ -98,7 +98,7 @@ ngx_os_init(ngx_log_t *log)
      *
      *  Windows CE x.x       3xxxxx
      */
-
+    // 计算windows版本
     ngx_win32_version = osvi.dwPlatformId * 100000
                         + osvi.dwMajorVersion * 10000
                         + osvi.dwMinorVersion * 100;
@@ -109,7 +109,9 @@ ngx_os_init(ngx_log_t *log)
     }
 
     GetSystemInfo(&si);
+    // 获取系统页面大小，如有4096B
     ngx_pagesize = si.dwPageSize;
+    // 系统核数
     ngx_ncpu = si.dwNumberOfProcessors;
     ngx_cacheline_size = NGX_CPU_CACHE_LINE;
 

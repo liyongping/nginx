@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -283,7 +283,7 @@ ngx_open_listening_sockets(ngx_cycle_t *cycle)
     log = cycle->log;
 
     /* TODO: configurable try number */
-
+    // 尝试5次，初始化socket：创建-绑定-监听...
     for (tries = 5; tries; tries--) {
         failed = 0;
 

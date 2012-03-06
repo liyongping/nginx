@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -16,9 +16,9 @@
 typedef struct ngx_listening_s  ngx_listening_t;
 
 struct ngx_listening_s {
-    ngx_socket_t        fd;
+    ngx_socket_t        fd;         // socket，文件描述符
 
-    struct sockaddr    *sockaddr;
+    struct sockaddr    *sockaddr;   // 地址
     socklen_t           socklen;    /* size of sockaddr */
     size_t              addr_text_max_len;
     ngx_str_t           addr_text;
@@ -26,8 +26,8 @@ struct ngx_listening_s {
     int                 type;
 
     int                 backlog;
-    int                 rcvbuf;
-    int                 sndbuf;
+    int                 rcvbuf;     // 接收缓冲
+    int                 sndbuf;     // 发送缓冲
 #if (NGX_HAVE_KEEPALIVE_TUNABLE)
     int                 keepidle;
     int                 keepintvl;
@@ -48,7 +48,7 @@ struct ngx_listening_s {
     /* should be here because of the deferred accept */
     ngx_msec_t          post_accept_timeout;
 
-    ngx_listening_t    *previous;
+    ngx_listening_t    *previous;   // 指向前一个ngx_listening_t结构
     ngx_connection_t   *connection;
 
     unsigned            open:1;

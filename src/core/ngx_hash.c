@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -18,7 +18,7 @@ ngx_hash_find(ngx_hash_t *hash, ngx_uint_t key, u_char *name, size_t len)
 #if 0
     ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0, "hf:\"%*s\"", len, name);
 #endif
-
+    // 由key找到所在的bucket
     elt = hash->buckets[key % hash->size];
 
     if (elt == NULL) {
@@ -26,20 +26,20 @@ ngx_hash_find(ngx_hash_t *hash, ngx_uint_t key, u_char *name, size_t len)
     }
 
     while (elt->value) {
-        if (len != (size_t) elt->len) {
+        if (len != (size_t) elt->len) {     // 先判断长度
             goto next;
         }
 
         for (i = 0; i < len; i++) {
-            if (name[i] != elt->name[i]) {
+            if (name[i] != elt->name[i]) {  // 接着比较name的内容
                 goto next;
             }
         }
 
-        return elt->value;
+        return elt->value;                  // 匹配成功，直接返回该ngx_hash_elt_t结构的value字段
 
     next:
-
+        // 注意此处从elt->name[0]地址处向后偏移，故偏移只需加该elt的len即可，然后在以4字节对齐
         elt = (ngx_hash_elt_t *) ngx_align_ptr(&elt->name[0] + elt->len,
                                                sizeof(void *));
         continue;
@@ -244,7 +244,7 @@ ngx_hash_find_combined(ngx_hash_combined_t *hash, ngx_uint_t key, u_char *name,
     return NULL;
 }
 
-
+// NGX_HASH_ELT_SIZE计算ngx_hash_elt_t结构大小
 #define NGX_HASH_ELT_SIZE(name)                                               \
     (sizeof(void *) + ngx_align((name)->key.len + 2, sizeof(void *)))
 
@@ -285,7 +285,7 @@ ngx_hash_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names, ngx_uint_t nelts)
     for (size = start; size < hinit->max_size; size++) {
 
         ngx_memzero(test, size * sizeof(u_short));
-
+        // 检查bucket大小是否够分配hash数据
         for (n = 0; n < nelts; n++) {
             if (names[n].key.data == NULL) {
                 continue;
@@ -311,7 +311,7 @@ ngx_hash_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names, ngx_uint_t nelts)
 
         continue;
     }
-
+    // 若没有找到合适的bucket，退出
     ngx_log_error(NGX_LOG_EMERG, hinit->pool->log, 0,
                   "could not build the %s, you should increase "
                   "either %s_max_size: %i or %s_bucket_size: %i",
@@ -322,9 +322,9 @@ ngx_hash_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names, ngx_uint_t nelts)
 
     return NGX_ERROR;
 
-found:
+found:// 找到合适的bucket
 
-    for (i = 0; i < size; i++) {
+    for (i = 0; i < size; i++) {    // 将test数组前size个元素初始化为4
         test[i] = sizeof(void *);
     }
 
@@ -332,48 +332,50 @@ found:
         if (names[n].key.data == NULL) {
             continue;
         }
-
+        // 计算key和names中所有name长度，并保存在test[key]中
         key = names[n].key_hash % size;
         test[key] = (u_short) (test[key] + NGX_HASH_ELT_SIZE(&names[n]));
     }
-
+    // 计算hash数据的总长度
     len = 0;
 
     for (i = 0; i < size; i++) {
         if (test[i] == sizeof(void *)) {
             continue;
         }
-
+        // 对test[i]按ngx_cacheline_size对齐(32位平台，ngx_cacheline_size=32)
         test[i] = (u_short) (ngx_align(test[i], ngx_cacheline_size));
 
         len += test[i];
     }
 
     if (hinit->hash == NULL) {
+        // 在内存池中分配hash头及buckets数组
         hinit->hash = ngx_pcalloc(hinit->pool, sizeof(ngx_hash_wildcard_t)
                                              + size * sizeof(ngx_hash_elt_t *));
         if (hinit->hash == NULL) {
             ngx_free(test);
             return NGX_ERROR;
         }
-
+        // 计算buckets的启示位置(在ngx_hash_wildcard_t结构之后)
         buckets = (ngx_hash_elt_t **)
                       ((u_char *) hinit->hash + sizeof(ngx_hash_wildcard_t));
 
     } else {
+        // 在内存池中分配buckets数组
         buckets = ngx_pcalloc(hinit->pool, size * sizeof(ngx_hash_elt_t *));
         if (buckets == NULL) {
             ngx_free(test);
             return NGX_ERROR;
         }
     }
-
+    // 接着分配elts，大小为len+ngx_cacheline_size，此处为什么+32？——下面要按32字节对齐
     elts = ngx_palloc(hinit->pool, len + ngx_cacheline_size);
     if (elts == NULL) {
         ngx_free(test);
         return NGX_ERROR;
     }
-
+    // 将elts地址按ngx_cacheline_size=32对齐
     elts = ngx_align_ptr(elts, ngx_cacheline_size);
 
     for (i = 0; i < size; i++) {
@@ -389,20 +391,20 @@ found:
     for (i = 0; i < size; i++) {
         test[i] = 0;
     }
-
+    // 将传进来的每一个hash数据存入hash表
     for (n = 0; n < nelts; n++) {
         if (names[n].key.data == NULL) {
             continue;
         }
-
+        // 计算key，即将被hash的数据在第几个bucket，并计算其对应的elts位置
         key = names[n].key_hash % size;
         elt = (ngx_hash_elt_t *) ((u_char *) buckets[key] + test[key]);
-
+        // 对ngx_hash_elt_t结构赋值
         elt->value = names[n].value;
         elt->len = (u_short) names[n].key.len;
 
         ngx_strlow(elt->name, names[n].key.data, names[n].key.len);
-
+        // 计算下一个要被hash的数据的长度偏移
         test[key] = (u_short) (test[key] + NGX_HASH_ELT_SIZE(&names[n]));
     }
 
@@ -415,7 +417,7 @@ found:
 
         elt->value = NULL;
     }
-
+    // 释放该临时空间
     ngx_free(test);
 
     hinit->hash->buckets = buckets;

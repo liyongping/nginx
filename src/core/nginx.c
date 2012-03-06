@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -158,14 +158,14 @@ static ngx_command_t  ngx_core_commands[] = {
       ngx_null_command
 };
 
-
+// 定义ngx_core_module模块上下文
 static ngx_core_module_t  ngx_core_module_ctx = {
     ngx_string("core"),
     ngx_core_module_create_conf,
     ngx_core_module_init_conf
 };
 
-
+// 定义ngx_core_module模块
 ngx_module_t  ngx_core_module = {
     NGX_MODULE_V1,
     &ngx_core_module_ctx,                  /* module context */
@@ -181,7 +181,7 @@ ngx_module_t  ngx_core_module = {
     NGX_MODULE_V1_PADDING
 };
 
-
+// 全局变量ngx_max_module为模块个数
 ngx_uint_t          ngx_max_module;
 
 static ngx_uint_t   ngx_show_help;
@@ -192,7 +192,7 @@ static u_char      *ngx_conf_file;
 static u_char      *ngx_conf_params;
 static char        *ngx_signal;
 
-
+// 保存系统环境目录，如win7下为：c:\ProgramData
 static char **ngx_os_environ;
 
 
@@ -209,7 +209,7 @@ main(int argc, char *const *argv)
     if (ngx_strerror_init() != NGX_OK) {
         return 1;
     }
-
+    // 解析命令参数
     if (ngx_get_options(argc, argv) != NGX_OK) {
         return 1;
     }
@@ -266,7 +266,7 @@ main(int argc, char *const *argv)
     }
 
     /* TODO */ ngx_max_sockets = -1;
-
+    // 初始化并更新时间
     ngx_time_init();
 
 #if (NGX_PCRE)
@@ -274,7 +274,7 @@ main(int argc, char *const *argv)
 #endif
 
     ngx_pid = ngx_getpid();
-
+    // 初始化日志，如打开日志文件
     log = ngx_log_init(ngx_prefix);
     if (log == NULL) {
         return 1;
@@ -293,20 +293,20 @@ main(int argc, char *const *argv)
     ngx_memzero(&init_cycle, sizeof(ngx_cycle_t));
     init_cycle.log = log;
     ngx_cycle = &init_cycle;
-
+    // 为cycle创建个1024B的内存池
     init_cycle.pool = ngx_create_pool(1024, log);
     if (init_cycle.pool == NULL) {
         return 1;
     }
-
+    // 保存参数到全局变量中
     if (ngx_save_argv(&init_cycle, argc, argv) != NGX_OK) {
         return 1;
     }
-
+    // 初始化init_cycle中的一些如: conf_file，prefix，conf_prefix等字段
     if (ngx_process_options(&init_cycle) != NGX_OK) {
         return 1;
     }
-
+    // 初始化系统相关变量，如内存页面大小ngx_pagesize,ngx_cacheline_size,最大连接数ngx_max_sockets等
     if (ngx_os_init(log) != NGX_OK) {
         return 1;
     }
@@ -314,20 +314,21 @@ main(int argc, char *const *argv)
     /*
      * ngx_crc32_table_init() requires ngx_cacheline_size set in ngx_os_init()
      */
-
+    // 初始化CRC表，提高效率，以后就不用计算了，直接用
     if (ngx_crc32_table_init() != NGX_OK) {
         return 1;
     }
-
+    // 继承sockets
     if (ngx_add_inherited_sockets(&init_cycle) != NGX_OK) {
         return 1;
     }
 
     ngx_max_module = 0;
+    // 计算模块个数，并且设置各个模块顺序（索引）
     for (i = 0; ngx_modules[i]; i++) {
         ngx_modules[i]->index = ngx_max_module++;
     }
-
+    // 对ngx_cycle结构进行初始化
     cycle = ngx_init_cycle(&init_cycle);
     if (cycle == NULL) {
         if (ngx_test_config) {
@@ -346,7 +347,7 @@ main(int argc, char *const *argv)
 
         return 0;
     }
-
+    // 检查是否有信号，如有，进入ngx_signal_process处理
     if (ngx_signal) {
         return ngx_signal_process(cycle, ngx_signal);
     }
@@ -362,12 +363,13 @@ main(int argc, char *const *argv)
     }
 
 #if !(NGX_WIN32)
-
+    // 注册信号处理程序
     if (ngx_init_signals(cycle->log) != NGX_OK) {
         return 1;
     }
 
     if (!ngx_inherited && ccf->daemon) {
+        // 创建守护进程
         if (ngx_daemon(cycle->log) != NGX_OK) {
             return 1;
         }
@@ -380,7 +382,7 @@ main(int argc, char *const *argv)
     }
 
 #endif
-
+    // 创建进程记录文件
     if (ngx_create_pidfile(&ccf->pid, cycle->log) != NGX_OK) {
         return 1;
     }
@@ -402,12 +404,12 @@ main(int argc, char *const *argv)
     }
 
     ngx_use_stderr = 0;
-
+    // 进入进程循环，处理过程
     if (ngx_process == NGX_PROCESS_SINGLE) {
-        ngx_single_process_cycle(cycle);
+        ngx_single_process_cycle(cycle);    // 单进程
 
     } else {
-        ngx_master_process_cycle(cycle);
+        ngx_master_process_cycle(cycle);    // 多进程
     }
 
     return 0;
@@ -438,8 +440,8 @@ ngx_add_inherited_sockets(ngx_cycle_t *cycle)
     }
 
     for (p = inherited, v = p; *p; p++) {
-        if (*p == ':' || *p == ';') {
-            s = ngx_atoi(v, p - v);
+        if (*p == ':' || *p == ';') {   // sockets以':'或者';'隔开
+            s = ngx_atoi(v, p - v);     // 这里可以看出是10进制数据
             if (s == NGX_ERROR) {
                 ngx_log_error(NGX_LOG_EMERG, cycle->log, 0,
                               "invalid socket number \"%s\" in " NGINX_VAR
@@ -449,7 +451,7 @@ ngx_add_inherited_sockets(ngx_cycle_t *cycle)
             }
 
             v = p + 1;
-
+            // 将合法的socket number加入该数组
             ls = ngx_array_push(&cycle->listening);
             if (ls == NULL) {
                 return NGX_ERROR;
@@ -819,7 +821,7 @@ ngx_save_argv(ngx_cycle_t *cycle, int argc, char *const *argv)
     ngx_argv[i] = NULL;
 
 #endif
-
+    // 返回系统环境目录，如win7下为：c:\ProgramData
     ngx_os_environ = environ;
 
     return NGX_OK;
@@ -941,7 +943,7 @@ ngx_core_module_create_conf(ngx_cycle_t *cycle)
      *     ccf->cpu_affinity_n = 0;
      *     ccf->cpu_affinity = NULL;
      */
-
+    // 只是简单初始化，设置一些默认值
     ccf->daemon = NGX_CONF_UNSET;
     ccf->master = NGX_CONF_UNSET;
     ccf->timer_resolution = NGX_CONF_UNSET_MSEC;

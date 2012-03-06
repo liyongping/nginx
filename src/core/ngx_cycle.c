@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -57,19 +57,19 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     ngx_core_conf_t     *ccf, *old_ccf;
     ngx_core_module_t   *module;
     char                 hostname[NGX_MAXHOSTNAMELEN];
-
+    // 更新时区
     ngx_timezone_update();
 
     /* force localtime update with a new timezone */
-
+    
     tp = ngx_timeofday();
     tp->sec = 0;
-
+    // 更新时间
     ngx_time_update();
 
 
     log = old_cycle->log;
-
+    // 创建个固定大小的内存池：16384
     pool = ngx_create_pool(NGX_CYCLE_POOL_SIZE, log);
     if (pool == NULL) {
         return NULL;
@@ -117,7 +117,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         return NULL;
     }
 
-
+    // 如果old_cycle默认没有指定，则大小为10
     n = old_cycle->pathes.nelts ? old_cycle->pathes.nelts : 10;
 
     cycle->pathes.elts = ngx_pcalloc(pool, n * sizeof(ngx_path_t *));
@@ -211,12 +211,12 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 
     ngx_strlow(cycle->hostname.data, (u_char *) hostname, cycle->hostname.len);
 
-
+    // 调用CORE模块的create_conf
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->type != NGX_CORE_MODULE) {
             continue;
         }
-
+        
         module = ngx_modules[i]->ctx;
 
         if (module->create_conf) {
@@ -275,7 +275,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         ngx_log_stderr(0, "the configuration file %s syntax is ok",
                        cycle->conf_file.data);
     }
-
+    // 调用CORE模块的init_conf
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->type != NGX_CORE_MODULE) {
             continue;
@@ -350,7 +350,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 
     part = &cycle->open_files.part;
     file = part->elts;
-
+    // 遍历open_files，打开其所有的文件
     for (i = 0; /* void */ ; i++) {
 
         if (i >= part->nelts) {
@@ -423,7 +423,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 
         opart = &old_cycle->shared_memory.part;
         oshm_zone = opart->elts;
-
+        // 创建共享内存并初始化(新旧shared_memory链表的比较，相同的共享内存保留，旧的不同的共享内存被释放，新的被创建)
         for (n = 0; /* void */ ; n++) {
 
             if (n >= opart->nelts) {
@@ -568,7 +568,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 #endif
         }
     }
-
+    // 打开监听socket
     if (ngx_open_listening_sockets(cycle) != NGX_OK) {
         goto failed;
     }
@@ -589,7 +589,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     }
 
     pool->log = cycle->log;
-
+    // 初始化所有模块的init_module
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->init_module) {
             if (ngx_modules[i]->init_module(cycle) != NGX_OK) {
@@ -601,7 +601,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 
 
     /* close and delete stuff that lefts from an old cycle */
-
+    // 关闭或删除残留在old_cycle中的资源
     /* free the unnecessary shared memory */
 
     opart = &old_cycle->shared_memory.part;
@@ -970,7 +970,7 @@ ngx_create_pidfile(ngx_str_t *name, ngx_log_t *log)
     ngx_uint_t  create;
     ngx_file_t  file;
     u_char      pid[NGX_INT64_LEN + 2];
-
+    // SIGNALLER和worker进程不创建pid文件，直接返回
     if (ngx_process > NGX_PROCESS_MASTER) {
         return NGX_OK;
     }
@@ -992,6 +992,7 @@ ngx_create_pidfile(ngx_str_t *name, ngx_log_t *log)
     }
 
     if (!ngx_test_config) {
+        // 把进程id写入到文件中
         len = ngx_snprintf(pid, NGX_INT64_LEN + 2, "%P%N", ngx_pid) - pid;
 
         if (ngx_write_file(&file, pid, len, 0) == NGX_ERROR) {
