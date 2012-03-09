@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -44,7 +44,7 @@ ngx_spawn_process(ngx_cycle_t *cycle, char *name, ngx_int_t respawn)
             return NGX_INVALID_PID;
         }
     }
-
+    // 获取当前进程模块全路径，如：C:\nginx\nginx.exe
     n = GetModuleFileName(NULL, file, MAX_PATH);
 
     if (n == 0) {
@@ -60,10 +60,10 @@ ngx_spawn_process(ngx_cycle_t *cycle, char *name, ngx_int_t respawn)
 
     ctx.path = file;
     ctx.name = name;
-    ctx.args = GetCommandLine();
+    ctx.args = GetCommandLine();// 获取命令行
     ctx.argv = NULL;
     ctx.envp = NULL;
-
+    // 创建一个子进程，pid为返回的子进程PID
     pid = ngx_execute(cycle, &ctx);
 
     if (pid == NGX_INVALID_PID) {
@@ -71,7 +71,7 @@ ngx_spawn_process(ngx_cycle_t *cycle, char *name, ngx_int_t respawn)
     }
 
     ngx_memzero(&ngx_processes[s], sizeof(ngx_process_t));
-
+    // 保存进程句柄、PID、名字
     ngx_processes[s].handle = ctx.child;
     ngx_processes[s].pid = pid;
     ngx_processes[s].name = name;
@@ -82,8 +82,8 @@ ngx_spawn_process(ngx_cycle_t *cycle, char *name, ngx_int_t respawn)
                 name, pid);
 
     events[0] = ngx_master_process_event;
-    events[1] = ctx.child;
-
+    events[1] = ctx.child;  // 子进程句柄
+    // 1. 等待主进程初始化完毕，2.等到子进程创建完毕
     rc = WaitForMultipleObjects(2, events, 0, 5000);
 
     ngx_time_update();
@@ -92,7 +92,7 @@ ngx_spawn_process(ngx_cycle_t *cycle, char *name, ngx_int_t respawn)
                    "WaitForMultipleObjects: %ul", rc);
 
     switch (rc) {
-
+    // 调用成功
     case WAIT_OBJECT_0:
 
         ngx_processes[s].term = OpenEvent(EVENT_MODIFY_STATE, 0,
@@ -142,13 +142,13 @@ ngx_spawn_process(ngx_cycle_t *cycle, char *name, ngx_int_t respawn)
                       name, pid, code);
 
         goto failed;
-
+    // 调用超时
     case WAIT_TIMEOUT:
         ngx_log_error(NGX_LOG_ALERT, cycle->log, 0,
                       "the event \"%s\" was not signaled for 5s",
                       ngx_master_process_event_name);
         goto failed;
-
+    // 调用失败
     case WAIT_FAILED:
         ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                       "WaitForSingleObject(\"%s\") failed",
@@ -212,7 +212,7 @@ ngx_execute(ngx_cycle_t *cycle, ngx_exec_ctx_t *ctx)
     si.cb = sizeof(STARTUPINFO);
 
     ngx_memzero(&pi, sizeof(PROCESS_INFORMATION));
-
+    // 创建一个进城nginx（ctx->path就是nginx.exe的全路径）
     if (CreateProcess(ctx->path, ctx->args,
                       NULL, NULL, 0, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)
         == 0)
@@ -223,7 +223,7 @@ ngx_execute(ngx_cycle_t *cycle, ngx_exec_ctx_t *ctx)
         return 0;
     }
 
-    ctx->child = pi.hProcess;
+    ctx->child = pi.hProcess;   // 返回新进程的句柄
 
     if (CloseHandle(pi.hThread) == 0) {
         ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
@@ -233,5 +233,5 @@ ngx_execute(ngx_cycle_t *cycle, ngx_exec_ctx_t *ctx)
     ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0,
                   "start %s process %P", ctx->name, pi.dwProcessId);
 
-    return pi.dwProcessId;
+    return pi.dwProcessId;      // 返回子进程PID
 }

@@ -347,7 +347,7 @@ main(int argc, char *const *argv)
 
         return 0;
     }
-    // 检查是否有信号，如有，进入ngx_signal_process处理
+    // 检查是否有设置信号处理，如有，进入ngx_signal_process处理
     if (ngx_signal) {
         return ngx_signal_process(cycle, ngx_signal);
     }

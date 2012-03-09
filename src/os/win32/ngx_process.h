@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -22,9 +22,9 @@ typedef DWORD               ngx_pid_t;
 
 
 typedef struct {
-    HANDLE                  handle;
-    ngx_pid_t               pid;
-    char                   *name;
+    HANDLE                  handle;     // 保存进程句柄
+    ngx_pid_t               pid;        // 保存进程的PID
+    char                   *name;       // 保存进程的名字
 
     HANDLE                  term;
     HANDLE                  quit;
@@ -45,11 +45,12 @@ typedef struct {
     char                   *args;
     char *const            *argv;
     char *const            *envp;
-    HANDLE                  child;
+    HANDLE                  child;  // 保存子进程的句柄
 } ngx_exec_ctx_t;
 
-
+// 创建一个子进程，name为进程名（“worker”,“master”）
 ngx_pid_t ngx_spawn_process(ngx_cycle_t *cycle, char *name, ngx_int_t respawn);
+// 创建一个子进程，pid为返回的子进程PID
 ngx_pid_t ngx_execute(ngx_cycle_t *cycle, ngx_exec_ctx_t *ctx);
 
 #define ngx_debug_point()
@@ -57,8 +58,9 @@ ngx_pid_t ngx_execute(ngx_cycle_t *cycle, ngx_exec_ctx_t *ctx);
 
 
 #define NGX_MAX_PROCESSES         (MAXIMUM_WAIT_OBJECTS - 4)
-
+// respawn标记是挂了要不要重启
 #define NGX_PROCESS_RESPAWN       -2
+// just_spawn:第一次创建的
 #define NGX_PROCESS_JUST_RESPAWN  -3
 
 

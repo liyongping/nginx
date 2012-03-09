@@ -20,14 +20,14 @@ struct ngx_listening_s {
 
     struct sockaddr    *sockaddr;   // 地址
     socklen_t           socklen;    /* size of sockaddr */
-    size_t              addr_text_max_len;
-    ngx_str_t           addr_text;
+    size_t              addr_text_max_len;// 地址的字符串表示的最大长度
+    ngx_str_t           addr_text;  // 地址的字符串表示
 
     int                 type;
 
-    int                 backlog;
-    int                 rcvbuf;     // 接收缓冲
-    int                 sndbuf;     // 发送缓冲
+    int                 backlog;    // listen()中使用的参数
+    int                 rcvbuf;     // 接收缓冲大小
+    int                 sndbuf;     // 发送缓冲大小
 #if (NGX_HAVE_KEEPALIVE_TUNABLE)
     int                 keepidle;
     int                 keepintvl;
@@ -51,7 +51,7 @@ struct ngx_listening_s {
     ngx_listening_t    *previous;   // 指向前一个ngx_listening_t结构
     ngx_connection_t   *connection;
 
-    unsigned            open:1;
+    unsigned            open:1;     // socket已经打开
     unsigned            remain:1;
     unsigned            ignore:1;
 

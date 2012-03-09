@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -42,16 +42,20 @@ sig_atomic_t   ngx_reopen;
 sig_atomic_t   ngx_reconfigure;
 ngx_uint_t     ngx_exiting;
 
-
+// 保存主进程内核对象
 HANDLE         ngx_master_process_event;
+// 主进程内核对象名称
 char           ngx_master_process_event_name[NGX_PROCESS_SYNC_NAME];
-
+// 停止操作内核对象：Global\ngx_stop_4060
 static HANDLE  ngx_stop_event;
 static char    ngx_stop_event_name[NGX_PROCESS_SYNC_NAME];
+// 退出操作内核对象：Global\ngx_quit_4060
 static HANDLE  ngx_quit_event;
 static char    ngx_quit_event_name[NGX_PROCESS_SYNC_NAME];
+// 重新打开操作内核对象：Global\ngx_reopen_4060
 static HANDLE  ngx_reopen_event;
 static char    ngx_reopen_event_name[NGX_PROCESS_SYNC_NAME];
+// 重新导入操作内核对象：Global\ngx_reload_4060
 static HANDLE  ngx_reload_event;
 static char    ngx_reload_event_name[NGX_PROCESS_SYNC_NAME];
 
@@ -85,7 +89,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
     ngx_console_init(cycle);
 
     SetEnvironmentVariable("ngx_unique", ngx_unique);
-
+    // 创建一个有名的、需要手动复位(1)的主进程内核对象
     ngx_master_process_event = CreateEvent(NULL, 1, 0,
                                            ngx_master_process_event_name);
     if (ngx_master_process_event == NULL) {
@@ -94,14 +98,14 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
                       ngx_master_process_event_name);
         exit(2);
     }
-
+    // 创建信号内核对象：ngx_stop_event,ngx_quit_event,ngx_reopen_event,ngx_reload_event
     if (ngx_create_signal_events(cycle) != NGX_OK) {
         exit(2);
     }
 
     ngx_sprintf((u_char *) ngx_cache_manager_mutex_name,
                 "ngx_cache_manager_mutex_%s%Z", ngx_unique);
-
+    // 创建用于缓存管理的mutex
     ngx_cache_manager_mutex = CreateMutex(NULL, 0,
                                           ngx_cache_manager_mutex_name);
     if (ngx_cache_manager_mutex == NULL) {
@@ -115,7 +119,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
     events[1] = ngx_quit_event;
     events[2] = ngx_reopen_event;
     events[3] = ngx_reload_event;
-
+    // 关闭正在监听的socket
     ngx_close_listening_sockets(cycle);
 
     if (ngx_start_worker_processes(cycle, NGX_PROCESS_RESPAWN) == 0) {
@@ -145,7 +149,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
 
         ngx_log_debug1(NGX_LOG_DEBUG_CORE, cycle->log, 0,
                        "master WaitForMultipleObjects: %ul", ev);
-
+        // 延时退出nginx
         if (ev == WAIT_OBJECT_0) {
             ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "exiting");
 
@@ -163,7 +167,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
 
             continue;
         }
-
+        // 关闭nginx
         if (ev == WAIT_OBJECT_0 + 1) {
             ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "shutting down");
 
@@ -177,7 +181,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
 
             continue;
         }
-
+        // 重新打开日志
         if (ev == WAIT_OBJECT_0 + 2) {
             ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "reopening logs");
 
@@ -192,7 +196,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
 
             continue;
         }
-
+        // 重新配置nginx，重启
         if (ev == WAIT_OBJECT_0 + 3) {
             ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "reconfiguring");
 
@@ -201,7 +205,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
                               "ResetEvent(\"%s\") failed",
                               ngx_reload_event_name);
             }
-
+            // 重新初始化cycle
             cycle = ngx_init_cycle(cycle);
             if (cycle == NULL) {
                 cycle = (ngx_cycle_t *) ngx_cycle;
@@ -209,22 +213,24 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
             }
 
             ngx_cycle = cycle;
-
+            // 关闭
             ngx_close_listening_sockets(cycle);
-
+            // 重启worker
             if (ngx_start_worker_processes(cycle, NGX_PROCESS_JUST_RESPAWN)) {
                 ngx_quit_worker_processes(cycle, 1);
             }
 
             continue;
         }
-
+        // 重启worker进程
         if (ev > WAIT_OBJECT_0 + 3 && ev < WAIT_OBJECT_0 + nev) {
 
             ngx_log_debug0(NGX_LOG_DEBUG_CORE, cycle->log, 0, "reap worker");
 
             live = ngx_reap_worker(cycle, events[ev]);
-
+            // 如果worker都已经退出，
+            // 并且收到了NGX_CMD_TERMINATE命令或者SIGTERM信号或者SIGINT信号(ngx_terminate=1)
+            // 或者NGX_CMD_QUIT命令或者SIGQUIT信号(ngx_quit=1)，则master退出
             if (!live && (ngx_terminate || ngx_quit)) {
                 ngx_master_process_exit(cycle);
             }
@@ -400,7 +406,7 @@ ngx_start_worker_processes(ngx_cycle_t *cycle, ngx_int_t type)
     ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "start worker processes");
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
-
+    // 通过ngx_spawn_process创建n个子进程
     for (n = 0; n < ccf->worker_processes; n++) {
         if (ngx_spawn_process(cycle, "worker", type) == NGX_INVALID_PID) {
             break;
@@ -864,7 +870,7 @@ ngx_worker_process_exit(ngx_cycle_t *cycle)
     ngx_connection_t  *c;
 
     ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "exit");
-
+    // 调用每个模块的退出进程操作
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->exit_process) {
             ngx_modules[i]->exit_process(cycle);

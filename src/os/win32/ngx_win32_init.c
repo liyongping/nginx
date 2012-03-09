@@ -16,7 +16,7 @@ ngx_uint_t  ngx_max_wsabufs;
 ngx_int_t   ngx_max_sockets;
 ngx_uint_t  ngx_inherited_nonblocking = 1;
 ngx_uint_t  ngx_tcp_nodelay_and_tcp_nopush;
-
+// 保存当前nginx主进程的pid为一个字符串
 char        ngx_unique[NGX_INT32_LEN + 1];
 
 
@@ -226,7 +226,7 @@ ngx_os_init(ngx_log_t *log)
                           "GetEnvironmentVariable(\"ngx_unique\") failed");
             return NGX_ERROR;
         }
-
+        // 保存下当前的pid
         ngx_sprintf((u_char *) ngx_unique, "%P%Z", ngx_pid);
     }
 
