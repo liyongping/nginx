@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -26,10 +26,12 @@ typedef struct {
 
 ngx_err_t ngx_create_thread(ngx_tid_t *tid,
     ngx_thread_value_t (__stdcall *func)(void *arg), void *arg, ngx_log_t *log);
+// 初始化线程，设置线程堆栈大小
 ngx_int_t ngx_init_threads(int n, size_t size, ngx_cycle_t *cycle);
-
+// 创建线程局部静态变量
 ngx_err_t ngx_thread_key_create(ngx_tls_key_t *key);
 #define ngx_thread_key_create_n     "TlsAlloc()"
+// 设置线程局部静态变量的值
 ngx_err_t ngx_thread_set_tls(ngx_tls_key_t *key, void *data);
 #define ngx_thread_set_tls_n         "TlsSetValue()"
 #define ngx_thread_get_tls           TlsGetValue

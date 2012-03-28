@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -24,7 +24,7 @@ typedef volatile ngx_atomic_uint_t  ngx_atomic_t;
 #if defined( __WATCOMC__ ) || defined( __BORLANDC__ ) || ( _MSC_VER >= 1300 )
 
 /* the new SDK headers */
-
+// 当lock指向的值与old相同的时候，修改lock指向的值为set
 #define ngx_atomic_cmp_set(lock, old, set)                                    \
      ((ngx_atomic_uint_t) InterlockedCompareExchange((long *) lock, set, old) \
                           == old)
@@ -39,7 +39,7 @@ typedef volatile ngx_atomic_uint_t  ngx_atomic_t;
 
 #endif
 
-
+// p指向的值自增add
 #define ngx_atomic_fetch_add(p, add) InterlockedExchangeAdd((long *) p, add)
 
 

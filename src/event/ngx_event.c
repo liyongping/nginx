@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -429,7 +429,7 @@ ngx_event_module_init(ngx_cycle_t *cycle)
     void              ***cf;
     u_char              *shared;
     size_t               size, cl;
-    ngx_shm_t            shm;
+    ngx_shm_t            shm;//nginx多进程间的共享内存
     ngx_time_t          *tp;
     ngx_core_conf_t     *ccf;
     ngx_event_conf_t    *ecf;
@@ -450,7 +450,7 @@ ngx_event_module_init(ngx_cycle_t *cycle)
     }
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
-
+    // 设置时间精度
     ngx_timer_resolution = ccf->timer_resolution;
 
 #if !(NGX_WIN32)
@@ -463,6 +463,7 @@ ngx_event_module_init(ngx_cycle_t *cycle)
                       "getrlimit(RLIMIT_NOFILE) failed, ignored");
 
     } else {
+        // 检查连接上否已经超过上限
         if (ecf->connections > (ngx_uint_t) rlmt.rlim_cur
             && (ccf->rlimit_nofile == NGX_CONF_UNSET
                 || ecf->connections > (ngx_uint_t) ccf->rlimit_nofile))
@@ -479,7 +480,7 @@ ngx_event_module_init(ngx_cycle_t *cycle)
     }
 #endif /* !(NGX_WIN32) */
 
-
+    // 检查master
     if (ccf->master == 0) {
         return NGX_OK;
     }
@@ -490,9 +491,8 @@ ngx_event_module_init(ngx_cycle_t *cycle)
 
 
     /* cl should be equal or bigger than cache line size */
-
     cl = 128;
-
+    // 创建共享内存，用于accept mutex，connection counter和ngx_temp_number
     size = cl            /* ngx_accept_mutex */
            + cl          /* ngx_connection_counter */
            + cl;         /* ngx_temp_number */
@@ -512,7 +512,7 @@ ngx_event_module_init(ngx_cycle_t *cycle)
     shm.name.len = sizeof("nginx_shared_zone");
     shm.name.data = (u_char *) "nginx_shared_zone";
     shm.log = cycle->log;
-
+    // 申请共享内存
     if (ngx_shm_alloc(&shm) != NGX_OK) {
         return NGX_ERROR;
     }
@@ -521,14 +521,14 @@ ngx_event_module_init(ngx_cycle_t *cycle)
 
     ngx_accept_mutex_ptr = (ngx_atomic_t *) shared;
     ngx_accept_mutex.spin = (ngx_uint_t) -1;
-
+    // 系统支持原子数据则使用原子数据实现accept mutex，否则使用文件上锁实现
     if (ngx_shmtx_create(&ngx_accept_mutex, (ngx_shmtx_sh_t *) shared,
                          cycle->lock_file.data)
         != NGX_OK)
     {
         return NGX_ERROR;
     }
-
+    // ngx_connection_counter指到共享内存那
     ngx_connection_counter = (ngx_atomic_t *) (shared + 1 * cl);
 
     (void) ngx_atomic_cmp_set(ngx_connection_counter, 0, 1);
@@ -540,7 +540,7 @@ ngx_event_module_init(ngx_cycle_t *cycle)
     ngx_temp_number = (ngx_atomic_t *) (shared + 2 * cl);
 
     tp = ngx_timeofday();
-
+    //根据当前时间和进程ID，获取一个随机数
     ngx_random_number = (tp->msec << 16) + ngx_pid;
 
 #if (NGX_STAT_STUB)
@@ -907,7 +907,9 @@ ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     *(void **) conf = ctx;
-
+    // 调用所有event类模块的create_conf钩子，创建配置结构，这些配置结构形成一个数组
+    // 这个数组的指针最终会赋给cycle->conf_ctx，这是一个void ****指针，可以把所有
+    // 模块的配置结构有层次的保存下来
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->type != NGX_EVENT_MODULE) {
             continue;
@@ -927,14 +929,14 @@ ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     cf->ctx = ctx;
     cf->module_type = NGX_EVENT_MODULE;
     cf->cmd_type = NGX_EVENT_CONF;
-
+    // 解析“events {}”块中的指令
     rv = ngx_conf_parse(cf, NULL);
 
     *cf = pcf;
 
     if (rv != NGX_CONF_OK)
         return rv;
-
+    // 调用每个event类模块的init_conf
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->type != NGX_EVENT_MODULE) {
             continue;

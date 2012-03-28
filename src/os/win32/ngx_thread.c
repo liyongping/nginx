@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -48,6 +48,7 @@ ngx_init_threads(int n, size_t size, ngx_cycle_t *cycle)
 ngx_err_t
 ngx_thread_key_create(ngx_tls_key_t *key)
 {
+    // TLS：一个线程内部的各个函数调用都能访问、但其它线程不能访问的变量，线程局部静态变量
     *key = TlsAlloc();
 
     if (*key == TLS_OUT_OF_INDEXES) {

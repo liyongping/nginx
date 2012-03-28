@@ -10,8 +10,9 @@
 #include <ngx_event.h>
 #include <nginx.h>
 
-
+// 初始化进程
 static void ngx_process_init(ngx_cycle_t *cycle);
+// 初始化控制台，如隐藏窗口或设置控制台窗口关闭的时候处理方式
 static void ngx_console_init(ngx_cycle_t *cycle);
 static int __stdcall ngx_console_handler(u_long type);
 static ngx_int_t ngx_create_signal_events(ngx_cycle_t *cycle);
@@ -264,7 +265,7 @@ ngx_process_init(ngx_cycle_t *cycle)
     ngx_core_conf_t  *ccf;
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
-
+    // 初始化线程，设置线程堆栈大小
     if (ngx_init_threads(ngx_threads_n, ccf->thread_stack_size, cycle)
         != NGX_OK)
     {
@@ -289,7 +290,8 @@ ngx_console_init(ngx_cycle_t *cycle)
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
 
-    if (ccf->daemon) {
+    if (ccf->daemon) {  // 如果是守护进程或者服务后台方式，那么分离控制台窗口
+        // 分离与调用进程相关联的控制台
         if (FreeConsole() == 0) {
             ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                           "FreeConsole() failed");
@@ -297,7 +299,7 @@ ngx_console_init(ngx_cycle_t *cycle)
 
         return;
     }
-
+    // 如果不是守护进程，那么设置控制台程序关闭的回调函数，捕获关闭方式
     if (SetConsoleCtrlHandler(ngx_console_handler, 1) == 0) {
         ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                       "SetConsoleCtrlHandler() failed");
@@ -312,24 +314,24 @@ ngx_console_handler(u_long type)
 
     switch (type) {
 
-    case CTRL_C_EVENT:
+    case CTRL_C_EVENT:      // 用户按下Ctrl+C
         msg = "Ctrl-C pressed, exiting";
         break;
 
-    case CTRL_BREAK_EVENT:
+    case CTRL_BREAK_EVENT:  // 用户按下Ctrl+Break
         msg = "Ctrl-Break pressed, exiting";
         break;
 
-    case CTRL_CLOSE_EVENT:
+    case CTRL_CLOSE_EVENT:  // 关闭控制台窗口
         msg = "console closing, exiting";
         break;
-
-    case CTRL_LOGOFF_EVENT:
+    
+    case CTRL_LOGOFF_EVENT: // 当用戶退出系統时系統会发送这个信号給所有的Console程序
         msg = "user logs off, exiting";
         break;
 
     default:
-        return 0;
+        return 0;   // 0表示忽略处理，让系统进行默认操作
     }
 
     ngx_log_error(NGX_LOG_NOTICE, ngx_cycle->log, 0, msg);
@@ -337,7 +339,7 @@ ngx_console_handler(u_long type)
     if (ngx_stop_event == NULL) {
         return 1;
     }
-
+    // 触发程序终止事件
     if (SetEvent(ngx_stop_event) == 0) {
         ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
                       "SetEvent(\"%s\") failed", ngx_stop_event_name);

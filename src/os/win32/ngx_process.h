@@ -54,6 +54,7 @@ ngx_pid_t ngx_spawn_process(ngx_cycle_t *cycle, char *name, ngx_int_t respawn);
 ngx_pid_t ngx_execute(ngx_cycle_t *cycle, ngx_exec_ctx_t *ctx);
 
 #define ngx_debug_point()
+// SwitchToThread：导致调用线程在当前的处理器上执行其他线程：操作系统设置下一个需要执行的线程
 #define ngx_sched_yield()   SwitchToThread()
 
 
