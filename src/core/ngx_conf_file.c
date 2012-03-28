@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -11,6 +11,15 @@
 #define NGX_CONF_BUFFER  4096
 
 static ngx_int_t ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last);
+/*
+* ngx_conf_read_token() may return
+*
+*    NGX_ERROR             there is error
+*    NGX_OK                the token terminated by ";" was found
+*    NGX_CONF_BLOCK_START  the token terminated by "{" was found
+*    NGX_CONF_BLOCK_DONE   the "}" was found
+*    NGX_CONF_FILE_DONE    the configuration file is done
+*/
 static ngx_int_t ngx_conf_read_token(ngx_conf_t *cf);
 static char *ngx_conf_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 static ngx_int_t ngx_conf_test_full_name(ngx_str_t *name);
@@ -121,7 +130,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
     if (filename) {
 
         /* open configuration file */
-
+        // 打开配置文件
         fd = ngx_open_file(filename->data, NGX_FILE_RDONLY, NGX_FILE_OPEN, 0);
         if (fd == NGX_INVALID_FILE) {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, ngx_errno,
@@ -133,7 +142,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
         prev = cf->conf_file;
 
         cf->conf_file = &conf_file;
-
+        // 获取文件信息
         if (ngx_fd_info(fd, &cf->conf_file->file.info) == -1) {
             ngx_log_error(NGX_LOG_EMERG, cf->log, ngx_errno,
                           ngx_fd_info_n " \"%s\" failed", filename->data);
@@ -150,7 +159,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
         buf.last = buf.start;
         buf.end = buf.last + NGX_CONF_BUFFER;
         buf.temporary = 1;
-
+        // 保存配置文件的基本信息
         cf->conf_file->file.fd = fd;
         cf->conf_file->file.name.len = filename->len;
         cf->conf_file->file.name.data = filename->data;
@@ -168,7 +177,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
         type = parse_param;
     }
 
-
+    //循环遍历每一行配置文件，读取配置内容
     for ( ;; ) {
         rc = ngx_conf_read_token(cf);
 
@@ -240,7 +249,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
             goto failed;
         }
 
-
+        //调用ngx_conf_handler对当前的token进行处理
         rc = ngx_conf_handler(cf, rc);
 
         if (rc == NGX_ERROR) {
@@ -285,11 +294,11 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
     ngx_uint_t      i, multi;
     ngx_str_t      *name;
     ngx_command_t  *cmd;
-
+    // 获取token这个关键字命令的名字
     name = cf->args->elts;
 
     multi = 0;
-
+    // 遍历每个模块，检查token是在哪个模块中被定义，并且进行处理
     for (i = 0; ngx_modules[i]; i++) {
 
         /* look up the directive in the appropriate modules */
@@ -304,7 +313,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
         if (cmd == NULL) {
             continue;
         }
-
+        //检查token是否在当前模块的命令列表中，如果有进行处理
         for ( /* void */ ; cmd->name.len; cmd++) {
 
             if (name->len != cmd->name.len) {
@@ -390,7 +399,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
                     conf = confp[ngx_modules[i]->ctx_index];
                 }
             }
-
+            //调用对应命令的处理函数
             rv = cmd->set(cf, cmd, conf);
 
             if (rv == NGX_CONF_OK) {
@@ -458,7 +467,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
     start_line = cf->conf_file->line;
 
     file_size = ngx_file_size(&cf->conf_file->file.info);
-
+    // 循环解析配置文件，逐字符
     for ( ;; ) {
 
         if (b->pos >= b->last) {
@@ -516,7 +525,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
             if (size > b->end - (b->start + len)) {
                 size = b->end - (b->start + len);
             }
-
+            //读书配置文件内容到缓冲区b中
             n = ngx_read_file(&cf->conf_file->file, b->start + len, size,
                               cf->conf_file->file.offset);
 
@@ -538,15 +547,15 @@ ngx_conf_read_token(ngx_conf_t *cf)
         }
 
         ch = *b->pos++;
-
+        //检查是否到行尾
         if (ch == LF) {
             cf->conf_file->line++;
-
+            // 如果前面一行是注释行，那么现在开始设置新行的标志为：非注释行
             if (sharp_comment) {
                 sharp_comment = 0;
             }
         }
-
+        //注释行的话，跳过
         if (sharp_comment) {
             continue;
         }
@@ -615,7 +624,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
 
                 return NGX_CONF_BLOCK_DONE;
 
-            case '#':
+            case '#':   //注释标志，设置sharp_comment为1，表示当前行为注释行
                 sharp_comment = 1;
                 continue;
 
@@ -673,12 +682,13 @@ ngx_conf_read_token(ngx_conf_t *cf)
 
             } else if (ch == ' ' || ch == '\t' || ch == CR || ch == LF
                        || ch == ';' || ch == '{')
-            {
+            {//读取到了当前行，关键字的结尾了
                 last_space = 1;
                 found = 1;
             }
 
             if (found) {
+                // 申请一个字符串来保存关键字
                 word = ngx_array_push(cf->args);
                 if (word == NULL) {
                     return NGX_ERROR;
@@ -688,7 +698,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
                 if (word->data == NULL) {
                     return NGX_ERROR;
                 }
-
+                // 拷贝关键字到word->data
                 for (dst = word->data, src = start, len = 0;
                      src < b->pos - 1;
                      len++)
@@ -721,13 +731,13 @@ ngx_conf_read_token(ngx_conf_t *cf)
                     *dst++ = *src++;
                 }
                 *dst = '\0';
-                word->len = len;
+                word->len = len;//设置关键字长度
 
-                if (ch == ';') {
+                if (ch == ';') {//读取完成，结束
                     return NGX_OK;
                 }
 
-                if (ch == '{') {
+                if (ch == '{') {//一个conf块开始，返回
                     return NGX_CONF_BLOCK_START;
                 }
 
@@ -1197,6 +1207,7 @@ ngx_conf_set_num_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     value = cf->args->elts;
+    //把value后面的buffer强制转为一个str
     *np = ngx_atoi(value[1].data, value[1].len);
     if (*np == NGX_ERROR) {
         return "invalid number";

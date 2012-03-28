@@ -156,7 +156,7 @@ typedef struct {
 typedef struct {
     ngx_file_t            file;
     ngx_buf_t            *buffer;
-    ngx_uint_t            line;
+    ngx_uint_t            line;         //保存当前在buffer的第几行
 } ngx_conf_file_t;
 
 
@@ -171,7 +171,7 @@ struct ngx_conf_s {
     ngx_cycle_t          *cycle;
     ngx_pool_t           *pool;
     ngx_pool_t           *temp_pool;
-    ngx_conf_file_t      *conf_file;
+    ngx_conf_file_t      *conf_file;    //配置文件
     ngx_log_t            *log;
 
     void                 *ctx;
