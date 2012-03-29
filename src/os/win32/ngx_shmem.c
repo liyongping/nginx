@@ -1,4 +1,4 @@
-
+ï»¿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -14,8 +14,8 @@ ngx_shm_alloc(ngx_shm_t *shm)
 {
     u_char    *name;
     uint64_t   size;
-    // ÉêÇëÒ»¿é¿Õ¼ä´æ·Å¹²ÏíÄÚ´æÃû³Æ
-    name = ngx_alloc(shm->name.len + 2 + sizeof(NGX_INT32_LEN), shm->log);
+    // ç”³è¯·ä¸€å—ç©ºé—´å­˜æ”¾å…±äº«å†…å­˜åç§°
+    name = ngx_alloc(shm->name.len + 2 + NGX_INT32_LEN, shm->log);
     if (name == NULL) {
         return NGX_ERROR;
     }
@@ -25,7 +25,7 @@ ngx_shm_alloc(ngx_shm_t *shm)
     ngx_set_errno(0);
 
     size = shm->size;
-    // ´´½¨Ò»¸öÐÂµÄÎÄ¼þÓ³ÉäÄÚºË¶ÔÏó
+    // åˆ›å»ºä¸€ä¸ªæ–°çš„æ–‡ä»¶æ˜ å°„å†…æ ¸å¯¹è±¡
     shm->handle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE,
                                     (u_long) (size >> 32),
                                     (u_long) (size & 0xffffffff),
@@ -45,7 +45,7 @@ ngx_shm_alloc(ngx_shm_t *shm)
     if (ngx_errno == ERROR_ALREADY_EXISTS) {
         shm->exists = 1;
     }
-    // ½«Ò»¸öÎÄ¼þÓ³Éä¶ÔÏóÓ³Éäµ½µ±Ç°Ó¦ÓÃ³ÌÐòµÄµØÖ·¿Õ¼ä
+    // å°†ä¸€ä¸ªæ–‡ä»¶æ˜ å°„å¯¹è±¡æ˜ å°„åˆ°å½“å‰åº”ç”¨ç¨‹åºçš„åœ°å€ç©ºé—´
     shm->addr = MapViewOfFile(shm->handle, FILE_MAP_WRITE, 0, 0, 0);
 
     if (shm->addr != NULL) {
@@ -55,7 +55,7 @@ ngx_shm_alloc(ngx_shm_t *shm)
     ngx_log_error(NGX_LOG_ALERT, shm->log, ngx_errno,
                   "MapViewOfFile(%uz) of file mapping \"%V\" failed",
                   shm->size, &shm->name);
-    //¶ÔÏóÓ³ÉäÊ§°Ü£¬¹Ø±ÕÎÄ¼þÓ³Éä¶ÔÏó
+    //å¯¹è±¡æ˜ å°„å¤±è´¥ï¼Œå…³é—­æ–‡ä»¶æ˜ å°„å¯¹è±¡
     if (CloseHandle(shm->handle) == 0) {
         ngx_log_error(NGX_LOG_ALERT, shm->log, ngx_errno,
                       "CloseHandle() of file mapping \"%V\" failed",
@@ -69,13 +69,13 @@ ngx_shm_alloc(ngx_shm_t *shm)
 void
 ngx_shm_free(ngx_shm_t *shm)
 {
-    // ÔÚµ±Ç°Ó¦ÓÃ³ÌÐòµÄÄÚ´æµØÖ·¿Õ¼ä½â³ý¶ÔÒ»¸öÎÄ¼þÓ³Éä¶ÔÏóµÄÓ³Éä
+    // åœ¨å½“å‰åº”ç”¨ç¨‹åºçš„å†…å­˜åœ°å€ç©ºé—´è§£é™¤å¯¹ä¸€ä¸ªæ–‡ä»¶æ˜ å°„å¯¹è±¡çš„æ˜ å°„
     if (UnmapViewOfFile(shm->addr) == 0) {
         ngx_log_error(NGX_LOG_ALERT, shm->log, ngx_errno,
                       "UnmapViewOfFile(%p) of file mapping \"%V\" failed",
                       shm->addr, &shm->name);
     }
-    // ¹Ø±ÕÎÄ¼þÓ³Éä¶ÔÏó
+    // å…³é—­æ–‡ä»¶æ˜ å°„å¯¹è±¡
     if (CloseHandle(shm->handle) == 0) {
         ngx_log_error(NGX_LOG_ALERT, shm->log, ngx_errno,
                       "CloseHandle() of file mapping \"%V\" failed",

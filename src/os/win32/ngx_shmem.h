@@ -1,4 +1,4 @@
-
+ï»¿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -14,17 +14,17 @@
 
 
 typedef struct {
-    u_char      *addr;      //Ö¸Ïò¹²ÏíÄÚ´æµÄÖ¸Õë
-    size_t       size;      //¹²ÏíÄÚ´æ´óĞ¡
-    ngx_str_t    name;      //¹²ÏíÄÚ´æÃû³Æ
-    HANDLE       handle;    //¹²ÏíÄÚ´æ¾ä±ú
+    u_char      *addr;      //æŒ‡å‘å…±äº«å†…å­˜çš„æŒ‡é’ˆ
+    size_t       size;      //å…±äº«å†…å­˜å¤§å°
+    ngx_str_t    name;      //å…±äº«å†…å­˜åç§°
+    HANDLE       handle;    //å…±äº«å†…å­˜å¥æŸ„
     ngx_log_t   *log;
     ngx_uint_t   exists;   /* unsigned  exists:1;  */
 } ngx_shm_t;
 
-// ÉêÇë¹²ÏíÄÚ´æ
+// ç”³è¯·å…±äº«å†…å­˜
 ngx_int_t ngx_shm_alloc(ngx_shm_t *shm);
-// ÊÍ·Å¹²ÏíÄÚ´æ
+// é‡Šæ”¾å…±äº«å†…å­˜
 void ngx_shm_free(ngx_shm_t *shm);
 
 
