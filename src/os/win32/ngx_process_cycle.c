@@ -15,6 +15,7 @@ static void ngx_process_init(ngx_cycle_t *cycle);
 // 初始化控制台，如隐藏窗口或设置控制台窗口关闭的时候处理方式
 static void ngx_console_init(ngx_cycle_t *cycle);
 static int __stdcall ngx_console_handler(u_long type);
+// 创建信号对象，用于进程通信、同步等
 static ngx_int_t ngx_create_signal_events(ngx_cycle_t *cycle);
 static ngx_int_t ngx_start_worker_processes(ngx_cycle_t *cycle, ngx_int_t type);
 static void ngx_reopen_worker_processes(ngx_cycle_t *cycle);

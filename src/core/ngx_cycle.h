@@ -52,7 +52,7 @@ struct ngx_cycle_s {
     ngx_list_t                open_files;           // 打开的文件链表
     ngx_list_t                shared_memory;        // 共享内存链表
 
-    ngx_uint_t                connection_n;         // 连接个数
+    ngx_uint_t                connection_n;         // 连接个数, 由配置文件中的worker_connections设置
     ngx_uint_t                files_n;              // 文件打开数
 
     ngx_connection_t         *connections;          // 连接
@@ -71,8 +71,8 @@ struct ngx_cycle_s {
 
 
 typedef struct {
-     ngx_flag_t               daemon;
-     ngx_flag_t               master;
+     ngx_flag_t               daemon;   // 标记是否为开启daemon进程，默认为1,表示开启，对应：daemon on;
+     ngx_flag_t               master;   // 标记是否为开启master进程，默认为1,表示开启，对应：master_process on;
 
      ngx_msec_t               timer_resolution;
 

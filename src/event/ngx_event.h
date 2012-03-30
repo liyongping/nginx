@@ -472,15 +472,15 @@ extern ngx_os_io_t  ngx_io;
 
 
 typedef struct {
-    ngx_uint_t    connections;
-    ngx_uint_t    use;
+    ngx_uint_t    connections;          //连接数限制
+    ngx_uint_t    use;                  //使用的是哪个事件模型
 
-    ngx_flag_t    multi_accept;
-    ngx_flag_t    accept_mutex;
+    ngx_flag_t    multi_accept;         //标记是否多个accept？
+    ngx_flag_t    accept_mutex;         //标记是否accept做同步，多线程的时候吧？
 
-    ngx_msec_t    accept_mutex_delay;
+    ngx_msec_t    accept_mutex_delay;   //accept延迟时间
 
-    u_char       *name;
+    u_char       *name;                 //对应的模块名称
 
 #if (NGX_DEBUG)
     ngx_array_t   debug_connection;

@@ -24,7 +24,7 @@ extern ngx_module_t ngx_select_module;
 static ngx_int_t ngx_event_module_init(ngx_cycle_t *cycle);
 static ngx_int_t ngx_event_process_init(ngx_cycle_t *cycle);
 static char *ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
-
+// 解析配置：worker_connections，connections
 static char *ngx_event_connections(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 static char *ngx_event_use(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
@@ -32,6 +32,7 @@ static char *ngx_event_debug_connection(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 
 static void *ngx_event_create_conf(ngx_cycle_t *cycle);
+// 初始化对应事件模块的配置
 static char *ngx_event_init_conf(ngx_cycle_t *cycle, void *conf);
 
 
@@ -242,7 +243,7 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
     }
 
     delta = ngx_current_msec;
-
+    // 处理事件
     (void) ngx_process_events(cycle, timer, flags);
 
     delta = ngx_current_msec - delta;
@@ -433,7 +434,7 @@ ngx_event_module_init(ngx_cycle_t *cycle)
     ngx_time_t          *tp;
     ngx_core_conf_t     *ccf;
     ngx_event_conf_t    *ecf;
-
+    // 获取使用的事件模块，如IOCP，epool
     cf = ngx_get_conf(cycle->conf_ctx, ngx_events_module);
 
     if (cf == NULL) {
@@ -441,14 +442,14 @@ ngx_event_module_init(ngx_cycle_t *cycle)
                       "no \"events\" section in configuration");
         return NGX_ERROR;
     }
-
+    // 获取使用的事件模块的配置
     ecf = (*cf)[ngx_event_core_module.ctx_index];
 
     if (!ngx_test_config && ngx_process <= NGX_PROCESS_MASTER) {
         ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0,
                       "using the \"%s\" event method", ecf->name);
     }
-
+    // 获取核心配置
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
     // 设置时间精度
     ngx_timer_resolution = ccf->timer_resolution;
@@ -1213,6 +1214,7 @@ ngx_event_init_conf(ngx_cycle_t *cycle, void *conf)
 #endif
 
     if (module == NULL) {
+        // 查找事件模型对应的模块，如windows下用IOCP的话，就把IOCP模块赋值给module
         for (i = 0; ngx_modules[i]; i++) {
 
             if (ngx_modules[i]->type != NGX_EVENT_MODULE) {
@@ -1230,12 +1232,12 @@ ngx_event_init_conf(ngx_cycle_t *cycle, void *conf)
             break;
         }
     }
-
+    // 检查是否找到事件模块
     if (module == NULL) {
         ngx_log_error(NGX_LOG_EMERG, cycle->log, 0, "no events module found");
         return NGX_CONF_ERROR;
     }
-
+    // 设置ngx_event_conf_t中的字段
     ngx_conf_init_uint_value(ecf->connections, DEFAULT_CONNECTIONS);
     cycle->connection_n = ecf->connections;
 

@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -14,8 +14,8 @@
 
 
 typedef struct {
-    size_t      len;
-    u_char     *data;
+    size_t      len;    //字符串长度
+    u_char     *data;   //字符串buffer
 } ngx_str_t;
 
 
