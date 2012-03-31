@@ -419,7 +419,7 @@ ngx_open_listening_sockets(ngx_cycle_t *cycle)
                 }
             }
 #endif
-
+            // 监听
             if (listen(s, ls[i].backlog) == -1) {
                 ngx_log_error(NGX_LOG_EMERG, log, ngx_socket_errno,
                               "listen() to %V, backlog %d failed",

@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -9,8 +9,9 @@
 #include <ngx_core.h>
 #include <ngx_event.h>
 
-
+// ngx_enable_accept_events会把监听句柄从加到epool中
 static ngx_int_t ngx_enable_accept_events(ngx_cycle_t *cycle);
+// ngx_disable_accept_events会把监听句柄从epoll中取出
 static ngx_int_t ngx_disable_accept_events(ngx_cycle_t *cycle);
 static void ngx_close_accepted_connection(ngx_connection_t *c);
 
@@ -103,7 +104,7 @@ ngx_event_accept(ngx_event_t *ev)
 #if (NGX_STAT_STUB)
         (void) ngx_atomic_fetch_add(ngx_stat_accepted, 1);
 #endif
-
+        // 判断
         ngx_accept_disabled = ngx_cycle->connection_n / 8
                               - ngx_cycle->free_connection_n;
 
@@ -294,6 +295,7 @@ ngx_event_accept(ngx_event_t *ev)
 ngx_int_t
 ngx_trylock_accept_mutex(ngx_cycle_t *cycle)
 {
+    // ngx_shmtx_trylock是非阻塞取锁的，返回1表示成功，0表示没取到锁
     if (ngx_shmtx_trylock(&ngx_accept_mutex)) {
 
         ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
@@ -305,12 +307,12 @@ ngx_trylock_accept_mutex(ngx_cycle_t *cycle)
         {
             return NGX_OK;
         }
-
+        // ngx_enable_accept_events会把监听的句柄都塞入到本worker进程的epoll中
         if (ngx_enable_accept_events(cycle) == NGX_ERROR) {
             ngx_shmtx_unlock(&ngx_accept_mutex);
             return NGX_ERROR;
         }
-
+        // ngx_accept_mutex_held置为1，表示拿到锁了，返回
         ngx_accept_events = 0;
         ngx_accept_mutex_held = 1;
 
@@ -319,7 +321,7 @@ ngx_trylock_accept_mutex(ngx_cycle_t *cycle)
 
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                    "accept mutex lock failed: %ui", ngx_accept_mutex_held);
-
+    // 处理没有拿到锁的逻辑，ngx_disable_accept_events会把监听句柄从epoll中取出
     if (ngx_accept_mutex_held) {
         if (ngx_disable_accept_events(cycle) == NGX_ERROR) {
             return NGX_ERROR;

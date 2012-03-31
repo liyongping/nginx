@@ -674,7 +674,7 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, char *mevn)
         goto failed;
     }
 
-
+    // 在worker进程中，创建三个线程
     if (ngx_create_thread(&wtid, ngx_worker_thread, NULL, log) != 0) {
         goto failed;
     }
