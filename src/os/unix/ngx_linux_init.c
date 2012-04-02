@@ -8,8 +8,9 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-
+// 保存系统类型，一般为linux
 u_char  ngx_linux_kern_ostype[50];
+// 保存操作系统详细的版本信息
 u_char  ngx_linux_kern_osrelease[50];
 
 int     ngx_linux_rtsig_max;

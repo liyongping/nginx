@@ -10,10 +10,10 @@
 #include <nginx.h>
 
 
-ngx_int_t   ngx_ncpu;
+ngx_int_t   ngx_ncpu;                      // 系统CPU数目
 ngx_int_t   ngx_max_sockets;
 ngx_uint_t  ngx_inherited_nonblocking;
-ngx_uint_t  ngx_tcp_nodelay_and_tcp_nopush;
+ngx_uint_t  ngx_tcp_nodelay_and_tcp_nopush;//
 
 
 struct rlimit  rlmt;
@@ -35,13 +35,14 @@ ngx_os_init(ngx_log_t *log)
     ngx_uint_t  n;
 
 #if (NGX_HAVE_OS_SPECIFIC_INIT)
+    // 获取系统信息
     if (ngx_os_specific_init(log) != NGX_OK) {
         return NGX_ERROR;
     }
 #endif
 
     ngx_init_setproctitle(log);
-
+    // 获取当前系统的页面大小
     ngx_pagesize = getpagesize();
     ngx_cacheline_size = NGX_CPU_CACHE_LINE;
 
@@ -49,6 +50,7 @@ ngx_os_init(ngx_log_t *log)
 
 #if (NGX_HAVE_SC_NPROCESSORS_ONLN)
     if (ngx_ncpu == 0) {
+        // 获取CPU数目
         ngx_ncpu = sysconf(_SC_NPROCESSORS_ONLN);
     }
 #endif

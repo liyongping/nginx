@@ -8,9 +8,15 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-
+// 系统页面大小
 ngx_uint_t  ngx_pagesize;
+// 2^ngx_pagesize_shift==ngx_pagesize. 当ngx_pagesize为4096时，ngx_pagesize_shift为12
 ngx_uint_t  ngx_pagesize_shift;
+/*
+ * Cache Line 是传送到缓存中的最小内存块。缓存行通常有固定的大小，典型的范围为 16 ~ 256 个字节。
+行大小的确切值依据具体应用而定，系统设计者可能会对其配置为不同的尺寸。还有一些算法是可以在实时中
+动态调整缓存行的大小。
+*/
 ngx_uint_t  ngx_cacheline_size;
 
 
