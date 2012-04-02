@@ -191,7 +191,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         return NULL;
     }
 
-
+    // 获取主机名
     if (gethostname(hostname, NGX_MAXHOSTNAMELEN) == -1) {
         ngx_log_error(NGX_LOG_EMERG, log, ngx_errno, "gethostname() failed");
         ngx_destroy_pool(pool);
@@ -333,7 +333,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         goto failed;
     }
 
-
+    // 创建client_body_temp，proxy_temp，fastcgi_temp，uwsgi_temp这四个目录
     if (ngx_create_pathes(cycle, ccf->user) != NGX_OK) {
         goto failed;
     }
@@ -350,7 +350,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 
     part = &cycle->open_files.part;
     file = part->elts;
-    // 遍历open_files，打开其所有的文件
+    // 遍历open_files，打开其所有需要打开的文件
     for (i = 0; /* void */ ; i++) {
 
         if (i >= part->nelts) {
@@ -383,6 +383,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         }
 
 #if !(NGX_WIN32)
+        // 这里设置为FD_CLOEXEC表示当程序执行exec函数时本fd将被系统自动关闭,表示不传递给exec创建的新进程
         if (fcntl(file[i].fd, F_SETFD, FD_CLOEXEC) == -1) {
             ngx_log_error(NGX_LOG_EMERG, log, ngx_errno,
                           "fcntl(FD_CLOEXEC) \"%s\" failed",

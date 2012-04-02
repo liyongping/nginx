@@ -88,7 +88,7 @@ typedef void (*ngx_connection_handler_pt)(ngx_connection_t *c);
 #define ngx_abs(value)       (((value) >= 0) ? (value) : - (value))
 #define ngx_max(val1, val2)  ((val1 < val2) ? (val2) : (val1))
 #define ngx_min(val1, val2)  ((val1 > val2) ? (val2) : (val1))
-
+// 获取ngx_cacheline_size大小
 void ngx_cpuinfo(void);
 
 #if (NGX_HAVE_OPENAT)

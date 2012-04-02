@@ -10,10 +10,10 @@
 #include <nginx.h>
 
 
-ngx_int_t   ngx_ncpu;                      // 系统CPU数目
-ngx_int_t   ngx_max_sockets;
-ngx_uint_t  ngx_inherited_nonblocking;
-ngx_uint_t  ngx_tcp_nodelay_and_tcp_nopush;//
+ngx_int_t   ngx_ncpu;                       // 系统CPU数目
+ngx_int_t   ngx_max_sockets;                // socket的连接数上限
+ngx_uint_t  ngx_inherited_nonblocking;      // 标志是否是非阻塞socket
+ngx_uint_t  ngx_tcp_nodelay_and_tcp_nopush; //
 
 
 struct rlimit  rlmt;
@@ -58,7 +58,7 @@ ngx_os_init(ngx_log_t *log)
     if (ngx_ncpu < 1) {
         ngx_ncpu = 1;
     }
-
+    // 获取ngx_cacheline_size大小
     ngx_cpuinfo();
 
     if (getrlimit(RLIMIT_NOFILE, &rlmt) == -1) {
@@ -66,7 +66,7 @@ ngx_os_init(ngx_log_t *log)
                       "getrlimit(RLIMIT_NOFILE) failed)");
         return NGX_ERROR;
     }
-
+    // 获取socket句柄的最大数量限制
     ngx_max_sockets = (ngx_int_t) rlmt.rlim_cur;
 
 #if (NGX_HAVE_INHERITED_NONBLOCK || NGX_HAVE_ACCEPT4)
@@ -74,7 +74,7 @@ ngx_os_init(ngx_log_t *log)
 #else
     ngx_inherited_nonblocking = 0;
 #endif
-
+    // 把时间作为随机数种子
     srandom(ngx_time());
 
     return NGX_OK;

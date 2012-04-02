@@ -272,7 +272,7 @@ main(int argc, char *const *argv)
 #if (NGX_PCRE)
     ngx_regex_init();
 #endif
-
+    // 获取当前进程ID
     ngx_pid = ngx_getpid();
     // 初始化日志，如打开日志文件
     log = ngx_log_init(ngx_prefix);

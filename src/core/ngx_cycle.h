@@ -49,7 +49,7 @@ struct ngx_cycle_s {
 
     ngx_array_t               listening;            // 监听数组，存放监听的套接字
     ngx_array_t               pathes;
-    ngx_list_t                open_files;           // 打开的文件链表
+    ngx_list_t                open_files;           // 需要打开的文件链表，如access.log，error.log
     ngx_list_t                shared_memory;        // 共享内存链表
 
     ngx_uint_t                connection_n;         // 连接个数, 由配置文件中的worker_connections设置

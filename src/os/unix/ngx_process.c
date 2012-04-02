@@ -289,7 +289,8 @@ ngx_init_signals(ngx_log_t *log)
     for (sig = signals; sig->signo != 0; sig++) {
         ngx_memzero(&sa, sizeof(struct sigaction));
         sa.sa_handler = sig->handler;
-        sigemptyset(&sa.sa_mask);
+        sigemptyset(&sa.sa_mask);// 初始化信号集
+        // 设置信号处理回调函数
         if (sigaction(sig->signo, &sa, NULL) == -1) {
             ngx_log_error(NGX_LOG_EMERG, log, ngx_errno,
                           "sigaction(%s) failed", sig->signame);

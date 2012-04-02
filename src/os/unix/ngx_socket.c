@@ -29,7 +29,7 @@ ngx_nonblocking(ngx_socket_t s)
     int  nb;
 
     nb = 1;
-
+    // 设置s为非阻塞IO
     return ioctl(s, FIONBIO, &nb);
 }
 

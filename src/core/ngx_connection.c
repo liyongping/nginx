@@ -354,6 +354,7 @@ ngx_open_listening_sockets(ngx_cycle_t *cycle)
             /* TODO: close on exit */
 
             if (!(ngx_event_flags & NGX_USE_AIO_EVENT)) {
+                // 设置s为非阻塞IO
                 if (ngx_nonblocking(s) == -1) {
                     ngx_log_error(NGX_LOG_EMERG, log, ngx_socket_errno,
                                   ngx_nonblocking_n " %V failed",

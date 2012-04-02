@@ -44,6 +44,7 @@ static ngx_int_t         cached_gmtoff;
 static ngx_time_t        cached_time[NGX_TIME_SLOTS];
 static u_char            cached_err_log_time[NGX_TIME_SLOTS]
                                     [sizeof("1970/09/28 12:00:00")];
+// cached_http_time对应cached_time的时间，字符串格式
 static u_char            cached_http_time[NGX_TIME_SLOTS]
                                     [sizeof("Mon, 28 Sep 1970 06:00:00 GMT")];
 static u_char            cached_http_log_time[NGX_TIME_SLOTS]
@@ -87,8 +88,8 @@ ngx_time_update(void)
     ngx_gettimeofday(&tv);
 
     sec = tv.tv_sec;
-    msec = tv.tv_usec / 1000;
-
+    msec = tv.tv_usec / 1000;	// 从微秒usec中计算毫秒msec
+    // 获取毫妙精度的时间，可以看出nginx精确到毫秒
     ngx_current_msec = (ngx_msec_t) sec * 1000 + msec;
 
     tp = &cached_time[slot];
@@ -98,13 +99,13 @@ ngx_time_update(void)
         ngx_unlock(&ngx_time_lock);
         return;
     }
-
+    // 当cached_time数组保存的时间达到NGX_TIME_SLOTS上限的时候，从新开始把时间保存下来
     if (slot == NGX_TIME_SLOTS - 1) {
         slot = 0;
     } else {
         slot++;
     }
-
+    // 每调用ngx_time_update（）一次，保存一次时间
     tp = &cached_time[slot];
 
     tp->sec = sec;
@@ -112,7 +113,7 @@ ngx_time_update(void)
 
     ngx_gmtime(sec, &gmt);
 
-
+    // 把时间转为http格式的时间字符串
     p0 = &cached_http_time[slot][0];
 
     (void) ngx_sprintf(p0, "%s, %02d %s %4d %02d:%02d:%02d GMT",
@@ -168,7 +169,7 @@ ngx_time_update(void)
 
 
     ngx_memory_barrier();
-
+    // 保存下当前时间的各种格式
     ngx_cached_time = tp;
     ngx_cached_http_time.data = p0;
     ngx_cached_err_log_time.data = p1;

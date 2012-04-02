@@ -476,6 +476,7 @@ ngx_create_pathes(ngx_cycle_t *cycle, ngx_uid_t user)
     ngx_path_t      **path;
 
     path = cycle->pathes.elts;
+    // 创建client_body_temp，proxy_temp，fastcgi_temp，uwsgi_temp这四个目录
     for (i = 0; i < cycle->pathes.nelts; i++) {
 
         if (ngx_create_dir(path[i]->name.data, 0700) == NGX_FILE_ERROR) {

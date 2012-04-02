@@ -14,8 +14,8 @@
 
 
 typedef struct {
-    time_t      sec;
-    ngx_uint_t  msec;
+    time_t      sec;	// 保存秒
+    ngx_uint_t  msec;	// 保存毫秒
     ngx_int_t   gmtoff;
 } ngx_time_t;
 
@@ -25,6 +25,7 @@ void ngx_time_update(void);
 void ngx_time_sigsafe_update(void);
 u_char *ngx_http_time(u_char *buf, time_t t);
 u_char *ngx_http_cookie_time(u_char *buf, time_t t);
+// 把time_t格式时间（总秒数）转为ngx_tm_t格式的时间
 void ngx_gmtime(time_t t, ngx_tm_t *tp);
 
 time_t ngx_next_time(time_t when);
