@@ -10,7 +10,7 @@
 #include <ngx_event.h>
 #include <ngx_channel.h>
 
-
+// 启动或fork出n个子进程
 static void ngx_start_worker_processes(ngx_cycle_t *cycle, ngx_int_t n,
     ngx_int_t type);
 static void ngx_start_cache_manager_processes(ngx_cycle_t *cycle,
@@ -95,7 +95,8 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
     ngx_listening_t   *ls;
     ngx_core_conf_t   *ccf;
 
-    sigemptyset(&set);
+    sigemptyset(&set);          // 重置信号
+    // 把各种信号加入监控中
     sigaddset(&set, SIGCHLD);
     sigaddset(&set, SIGALRM);
     sigaddset(&set, SIGIO);
@@ -106,13 +107,13 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
     sigaddset(&set, ngx_signal_value(NGX_TERMINATE_SIGNAL));
     sigaddset(&set, ngx_signal_value(NGX_SHUTDOWN_SIGNAL));
     sigaddset(&set, ngx_signal_value(NGX_CHANGEBIN_SIGNAL));
-
+    // SIG_BLOCK：该进程新的信号屏蔽字是其当前信号屏蔽字和set指向信号集的并集。set包含了我们希望阻塞的附加信号。
     if (sigprocmask(SIG_BLOCK, &set, NULL) == -1) {
         ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                       "sigprocmask() failed");
     }
-
-    sigemptyset(&set);
+    // 两次重置的原因：前面是现检查信号是否都能加入监控中
+    sigemptyset(&set);          // 重置信号
 
 
     size = sizeof(master_process);
@@ -128,12 +129,12 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
         *p++ = ' ';
         p = ngx_cpystrn(p, (u_char *) ngx_argv[i], size);
     }
-
+    // 设置进程的名称
     ngx_setproctitle(title);
 
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
-
+    // 启动或fork出n个子进程
     ngx_start_worker_processes(cycle, ccf->worker_processes,
                                NGX_PROCESS_RESPAWN);
     ngx_start_cache_manager_processes(cycle, 0);
@@ -309,10 +310,10 @@ ngx_single_process_cycle(ngx_cycle_t *cycle)
             }
         }
     }
-
+    // 工作循环
     for ( ;; ) {
         ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0, "worker cycle");
-
+        //处理event
         ngx_process_events_and_timers(cycle);
 
         if (ngx_terminate || ngx_quit) {
@@ -325,7 +326,7 @@ ngx_single_process_cycle(ngx_cycle_t *cycle)
 
             ngx_master_process_exit(cycle);
         }
-
+        // 动态的重新读取配置文件
         if (ngx_reconfigure) {
             ngx_reconfigure = 0;
             ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "reconfiguring");
@@ -338,7 +339,7 @@ ngx_single_process_cycle(ngx_cycle_t *cycle)
 
             ngx_cycle = cycle;
         }
-
+        // 动态重新打开文件
         if (ngx_reopen) {
             ngx_reopen = 0;
             ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "reopening logs");

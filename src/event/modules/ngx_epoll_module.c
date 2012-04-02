@@ -86,7 +86,7 @@ int eventfd(u_int initval)
 
 
 typedef struct {
-    ngx_uint_t  events;
+    ngx_uint_t  events;         // epoll_event数量上限
     ngx_uint_t  aio_requests;
 } ngx_epoll_conf_t;
 
@@ -110,8 +110,8 @@ static void ngx_epoll_eventfd_handler(ngx_event_t *ev);
 static void *ngx_epoll_create_conf(ngx_cycle_t *cycle);
 static char *ngx_epoll_init_conf(ngx_cycle_t *cycle, void *conf);
 
-static int                  ep = -1;
-static struct epoll_event  *event_list;
+static int                  ep = -1;    // 保存epoll句柄
+static struct epoll_event  *event_list; // 一个大小为nevents的事件链表
 static ngx_uint_t           nevents;
 
 #if (NGX_HAVE_FILE_AIO)
@@ -293,6 +293,7 @@ ngx_epoll_init(ngx_cycle_t *cycle, ngx_msec_t timer)
     epcf = ngx_event_get_conf(cycle->conf_ctx, ngx_epoll_module);
 
     if (ep == -1) {
+        // 创建一个epoll的句柄
         ep = epoll_create(cycle->connection_n / 2);
 
         if (ep == -1) {
@@ -312,7 +313,7 @@ ngx_epoll_init(ngx_cycle_t *cycle, ngx_msec_t timer)
         if (event_list) {
             ngx_free(event_list);
         }
-
+        // 申请一个大小为nevents的事件池
         event_list = ngx_alloc(sizeof(struct epoll_event) * epcf->events,
                                cycle->log);
         if (event_list == NULL) {
@@ -607,7 +608,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
     }
 
     ngx_mutex_lock(ngx_posted_events_mutex);
-
+    // events为需要处理的IO数量
     for (i = 0; i < events; i++) {
         c = event_list[i].data.ptr;
 

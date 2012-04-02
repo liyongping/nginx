@@ -35,6 +35,7 @@ void ngx_setproctitle(char *title);
 #define NGX_SETPROCTITLE_PAD       '\0'
 
 ngx_int_t ngx_init_setproctitle(ngx_log_t *log);
+// 设置进程的名称
 void ngx_setproctitle(char *title);
 
 #else
