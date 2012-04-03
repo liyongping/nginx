@@ -49,7 +49,7 @@ struct ngx_listening_s {
     ngx_msec_t          post_accept_timeout;
 
     ngx_listening_t    *previous;   // 指向前一个ngx_listening_t结构
-    ngx_connection_t   *connection;
+    ngx_connection_t   *connection; // 指向当前这个listening所在的连接
 
     unsigned            open:1;     // socket已经打开
     unsigned            remain:1;
@@ -111,9 +111,9 @@ typedef enum {
 
 
 struct ngx_connection_s {
-    void               *data;
-    ngx_event_t        *read;
-    ngx_event_t        *write;
+    void               *data;       // 指向下一个连接？
+    ngx_event_t        *read;       // 读事件
+    ngx_event_t        *write;      // 写事件
 
     ngx_socket_t        fd;
 
@@ -122,7 +122,7 @@ struct ngx_connection_s {
     ngx_recv_chain_pt   recv_chain;
     ngx_send_chain_pt   send_chain;
 
-    ngx_listening_t    *listening;
+    ngx_listening_t    *listening;  // 指向当前这个连接所在的listening
 
     off_t               sent;
 
@@ -130,7 +130,7 @@ struct ngx_connection_s {
 
     ngx_pool_t         *pool;
 
-    struct sockaddr    *sockaddr;
+    struct sockaddr    *sockaddr;   // 客户端地址信息
     socklen_t           socklen;
     ngx_str_t           addr_text;
 
@@ -192,7 +192,7 @@ void ngx_close_connection(ngx_connection_t *c);
 ngx_int_t ngx_connection_local_sockaddr(ngx_connection_t *c, ngx_str_t *s,
     ngx_uint_t port);
 ngx_int_t ngx_connection_error(ngx_connection_t *c, ngx_err_t err, char *text);
-
+// ngx_get_connection：把s放入连接队列中，主要是操作free_connections，返回s所在的连接
 ngx_connection_t *ngx_get_connection(ngx_socket_t s, ngx_log_t *log);
 void ngx_free_connection(ngx_connection_t *c);
 

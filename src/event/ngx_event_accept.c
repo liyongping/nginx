@@ -104,7 +104,7 @@ ngx_event_accept(ngx_event_t *ev)
 #if (NGX_STAT_STUB)
         (void) ngx_atomic_fetch_add(ngx_stat_accepted, 1);
 #endif
-        // 判断
+        // 判断空闲连接是否少于1/8
         ngx_accept_disabled = ngx_cycle->connection_n / 8
                               - ngx_cycle->free_connection_n;
 
@@ -134,7 +134,7 @@ ngx_event_accept(ngx_event_t *ev)
             ngx_close_accepted_connection(c);
             return;
         }
-
+        // 保存客户端地址信息
         ngx_memcpy(c->sockaddr, sa, socklen);
 
         log = ngx_palloc(c->pool, sizeof(ngx_log_t));
@@ -281,7 +281,7 @@ ngx_event_accept(ngx_event_t *ev)
 
         log->data = NULL;
         log->handler = NULL;
-
+        // 处理刚连接进来的请求
         ls->handler(c);
 
         if (ngx_event_flags & NGX_USE_KQUEUE_EVENT) {

@@ -93,6 +93,10 @@ typedef struct {
 
 static ngx_int_t ngx_epoll_init(ngx_cycle_t *cycle, ngx_msec_t timer);
 static void ngx_epoll_done(ngx_cycle_t *cycle);
+/* ngx_epoll_add_event
+ *
+ * event：为事件类型
+ */
 static ngx_int_t ngx_epoll_add_event(ngx_event_t *ev, ngx_int_t event,
     ngx_uint_t flags);
 static ngx_int_t ngx_epoll_del_event(ngx_event_t *ev, ngx_int_t event,
@@ -385,7 +389,7 @@ ngx_epoll_add_event(ngx_event_t *ev, ngx_int_t event, ngx_uint_t flags)
     ngx_event_t         *e;
     ngx_connection_t    *c;
     struct epoll_event   ee;
-
+    // 取得当前事件的连接
     c = ev->data;
 
     events = (uint32_t) event;
@@ -570,7 +574,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                    "epoll timer: %M", timer);
-
+    // 等待事件的到来
     events = epoll_wait(ep, event_list, (int) nevents, timer);
 
     err = (events == -1) ? ngx_errno : 0;
@@ -610,7 +614,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
     ngx_mutex_lock(ngx_posted_events_mutex);
     // events为需要处理的IO数量
     for (i = 0; i < events; i++) {
-        c = event_list[i].data.ptr;
+        c = event_list[i].data.ptr; // 取得当前要处理的事件对应的连接ngx_connection_t
 
         instance = (uintptr_t) c & 1;
         c = (ngx_connection_t *) ((uintptr_t) c & (uintptr_t) ~1);
@@ -660,7 +664,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 
             revents |= EPOLLIN|EPOLLOUT;
         }
-
+        // 处理两种情况：1.有连接上来 2.已经连接上来的连接，当收到数据，那么进行读入
         if ((revents & EPOLLIN) && rev->active) {
 
             if ((flags & NGX_POST_THREAD_EVENTS) && !rev->accept) {
@@ -677,12 +681,13 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
                 ngx_locked_post_event(rev, queue);
 
             } else {
+                //处理accept或接收数据，主要根据handler回调进行处理，开始handler默认都是ngx_event_accept，当已经accept后改为ngx_http_init_request
                 rev->handler(rev);
             }
         }
 
         wev = c->write;
-
+        // 有数据要发送
         if ((revents & EPOLLOUT) && wev->active) {
 
             if (c->fd == -1 || wev->instance != instance) {

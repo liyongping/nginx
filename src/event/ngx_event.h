@@ -36,11 +36,11 @@ typedef struct {
 
 
 struct ngx_event_s {
-    void            *data;
+    void            *data;      // 指向事件所在的连接ngx_connection_t
 
     unsigned         write:1;
 
-    unsigned         accept:1;
+    unsigned         accept:1;  // 是否在后面需要accept
 
     /* used to detect the stale events in kqueue, rtsig, and epoll */
     unsigned         instance:1;
@@ -49,7 +49,7 @@ struct ngx_event_s {
      * the event was passed or would be passed to a kernel;
      * in aio mode - operation was posted.
      */
-    unsigned         active:1;
+    unsigned         active:1;  // 当前事件是否是激活状态
 
     unsigned         disabled:1;
 
@@ -73,7 +73,7 @@ struct ngx_event_s {
 
     unsigned         unexpected_eof:1;
 
-    unsigned         deferred_accept:1;
+    unsigned         deferred_accept:1; // 是否是延时的accept
 
     /* the pending eof reported by kqueue or in aio chain operation */
     unsigned         pending_eof:1;
@@ -506,7 +506,7 @@ extern ngx_uint_t             ngx_use_accept_mutex;
 extern ngx_uint_t             ngx_accept_events;
 extern ngx_uint_t             ngx_accept_mutex_held;
 extern ngx_msec_t             ngx_accept_mutex_delay;
-extern ngx_int_t              ngx_accept_disabled;
+extern ngx_int_t              ngx_accept_disabled;      // 空闲连接是否少于1/8
 
 
 #if (NGX_STAT_STUB)

@@ -771,7 +771,7 @@ ngx_get_connection(ngx_socket_t s, ngx_log_t *log)
     }
 
     /* ngx_mutex_lock */
-
+    // c为取得的一个空闲连接，准备填入数据
     c = ngx_cycle->free_connections;
 
     if (c == NULL) {
@@ -790,7 +790,7 @@ ngx_get_connection(ngx_socket_t s, ngx_log_t *log)
     }
 
     ngx_cycle->free_connections = c->data;
-    ngx_cycle->free_connection_n--;
+    ngx_cycle->free_connection_n--;//空闲空闲连接减少一个
 
     /* ngx_mutex_unlock */
 
@@ -819,7 +819,7 @@ ngx_get_connection(ngx_socket_t s, ngx_log_t *log)
     rev->index = NGX_INVALID_INDEX;
     wev->index = NGX_INVALID_INDEX;
 
-    rev->data = c;
+    rev->data = c;  // 存储当前连接
     wev->data = c;
 
     wev->write = 1;

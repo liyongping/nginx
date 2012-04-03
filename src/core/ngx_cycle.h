@@ -42,7 +42,7 @@ struct ngx_cycle_s {
     ngx_log_t                 new_log;
 
     ngx_connection_t        **files;
-    ngx_connection_t         *free_connections;     // 空闲连接
+    ngx_connection_t         *free_connections;     // 空闲连接，其实就是connections指针中空闲的起始点
     ngx_uint_t                free_connection_n;    // 空闲连接数
 
     ngx_queue_t               reusable_connections_queue;   // 再利用连接队列
@@ -55,9 +55,9 @@ struct ngx_cycle_s {
     ngx_uint_t                connection_n;         // 连接个数, 由配置文件中的worker_connections设置
     ngx_uint_t                files_n;              // 文件打开数
 
-    ngx_connection_t         *connections;          // 连接
-    ngx_event_t              *read_events;          // 读事件
-    ngx_event_t              *write_events;         // 写事件
+    ngx_connection_t         *connections;          // 连接池，数组指针形式
+    ngx_event_t              *read_events;          // 读事件池
+    ngx_event_t              *write_events;         // 写事件池
 
     ngx_cycle_t              *old_cycle;            // 指向old_cycle
 

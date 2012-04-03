@@ -22,6 +22,7 @@ extern ngx_module_t ngx_select_module;
 
 
 static ngx_int_t ngx_event_module_init(ngx_cycle_t *cycle);
+// event进程初始化，主要是把listen的那个socket加入监听池中，如epoll监听池中
 static ngx_int_t ngx_event_process_init(ngx_cycle_t *cycle);
 static char *ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 // 解析配置：worker_connections，connections
@@ -293,7 +294,7 @@ ngx_handle_read_event(ngx_event_t *rev, ngx_uint_t flags)
     if (ngx_event_flags & NGX_USE_CLEAR_EVENT) {
 
         /* kqueue, epoll */
-
+        // 当读event还没有激活，准备好的时候，先要添加到epoll进行监听
         if (!rev->active && !rev->ready) {
             if (ngx_add_event(rev, NGX_READ_EVENT, NGX_CLEAR_EVENT)
                 == NGX_ERROR)
@@ -617,7 +618,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     if (ngx_event_timer_init(cycle->log) == NGX_ERROR) {
         return NGX_ERROR;
     }
-
+    // 调用event模块，如epoll的ngx_epoll_init函数
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_EVENT_MODULE) {
             continue;
@@ -683,15 +684,15 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     }
 
 #endif
-
+    // 申请连接队列
     cycle->connections =
         ngx_alloc(sizeof(ngx_connection_t) * cycle->connection_n, cycle->log);
     if (cycle->connections == NULL) {
         return NGX_ERROR;
     }
-
+    // c指向连接队列
     c = cycle->connections;
-
+    // 申请读事件队列
     cycle->read_events = ngx_alloc(sizeof(ngx_event_t) * cycle->connection_n,
                                    cycle->log);
     if (cycle->read_events == NULL) {
@@ -699,7 +700,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     }
 
     rev = cycle->read_events;
-    for (i = 0; i < cycle->connection_n; i++) {
+    for (i = 0; i < cycle->connection_n; i++) { // 初始化读事件队列
         rev[i].closed = 1;
         rev[i].instance = 1;
 #if (NGX_THREADS)
@@ -707,7 +708,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         rev[i].own_lock = &c[i].lock;
 #endif
     }
-
+    // 申请写事件队列
     cycle->write_events = ngx_alloc(sizeof(ngx_event_t) * cycle->connection_n,
                                     cycle->log);
     if (cycle->write_events == NULL) {
@@ -715,7 +716,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     }
 
     wev = cycle->write_events;
-    for (i = 0; i < cycle->connection_n; i++) {
+    for (i = 0; i < cycle->connection_n; i++) { // 初始化写事件队列
         wev[i].closed = 1;
 #if (NGX_THREADS)
         wev[i].lock = &c[i].lock;
@@ -725,7 +726,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
     i = cycle->connection_n;
     next = NULL;
-
+    // 初始化连接队列
     do {
         i--;
 
@@ -740,7 +741,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         c[i].lock = 0;
 #endif
     } while (i);
-
+    // 设置空闲连接队列
     cycle->free_connections = next;
     cycle->free_connection_n = cycle->connection_n;
 
@@ -748,7 +749,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
     ls = cycle->listening.elts;
     for (i = 0; i < cycle->listening.nelts; i++) {
-
+        // 把ls[i].fd放到连接队列，返回所在连接
         c = ngx_get_connection(ls[i].fd, cycle->log);
 
         if (c == NULL) {
@@ -756,14 +757,14 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         }
 
         c->log = &ls[i].log;
-
-        c->listening = &ls[i];
-        ls[i].connection = c;
+        // 让listening和connection互相保存对方
+        c->listening = &ls[i];  // 存储当前这个连接所在的listening
+        ls[i].connection = c;   // 指向当前这个listening所在的连接
 
         rev = c->read;
 
         rev->log = c->log;
-        rev->accept = 1;
+        rev->accept = 1;    //是否在后面需要accept
 
 #if (NGX_HAVE_DEFERRED_ACCEPT)
         rev->deferred_accept = ls[i].deferred_accept;
@@ -826,7 +827,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         }
 
 #else
-
+        // rev->accept为1，所以处理这个连接，需要用ngx_event_accept去处理
         rev->handler = ngx_event_accept;
 
         if (ngx_use_accept_mutex) {

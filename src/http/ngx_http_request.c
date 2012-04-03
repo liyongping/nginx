@@ -203,7 +203,7 @@ ngx_http_init_connection(ngx_connection_t *c)
     c->log_error = NGX_ERROR_INFO;
 
     rev = c->read;
-    rev->handler = ngx_http_init_request;
+    rev->handler = ngx_http_init_request;   //accept后，把handler改为ngx_http_init_request
     c->write->handler = ngx_http_empty_handler;
 
 #if (NGX_STAT_STUB)
