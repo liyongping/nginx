@@ -328,16 +328,17 @@ ngx_epoll_init(ngx_cycle_t *cycle, ngx_msec_t timer)
     nevents = epcf->events;
 
     ngx_io = ngx_os_io;
-
+    // 指定为epoll的事件处理
     ngx_event_actions = ngx_epoll_module_ctx.actions;
-
+    // NGX_USE_CLEAR_EVENT：边缘触发
+    // NGX_USE_LEVEL_EVENT：水平触发
 #if (NGX_HAVE_CLEAR_EVENT)
     ngx_event_flags = NGX_USE_CLEAR_EVENT
 #else
     ngx_event_flags = NGX_USE_LEVEL_EVENT
 #endif
-                      |NGX_USE_GREEDY_EVENT
-                      |NGX_USE_EPOLL_EVENT;
+                      |NGX_USE_GREEDY_EVENT // io的时候，直到EAGAIN为止
+                      |NGX_USE_EPOLL_EVENT; // epoll标志
 
     return NGX_OK;
 }
@@ -580,7 +581,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
     err = (events == -1) ? ngx_errno : 0;
 
     if (flags & NGX_UPDATE_TIME || ngx_event_timer_alarm) {
-        ngx_time_update();
+        ngx_time_update();  // 更新一次时间
     }
 
     if (err) {
@@ -600,7 +601,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
         ngx_log_error(level, cycle->log, err, "epoll_wait() failed");
         return NGX_ERROR;
     }
-
+    // 事件数量为0，可能是超时，有可能是出错了
     if (events == 0) {
         if (timer != NGX_TIMER_INFINITE) {
             return NGX_OK;
@@ -708,7 +709,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
             } else {
                 wev->ready = 1;
             }
-
+            // 先报存起来，再延后处理
             if (flags & NGX_POST_EVENTS) {
                 ngx_locked_post_event(wev, &ngx_posted_events);
 

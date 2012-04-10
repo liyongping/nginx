@@ -366,9 +366,9 @@ ngx_start_worker_processes(ngx_cycle_t *cycle, ngx_int_t n, ngx_int_t type)
         ngx_spawn_process(cycle, ngx_worker_process_cycle, NULL,
                           "worker process", type);
 
-        ch.pid = ngx_processes[ngx_process_slot].pid;
-        ch.slot = ngx_process_slot;
-        ch.fd = ngx_processes[ngx_process_slot].channel[0];
+        ch.pid = ngx_processes[ngx_process_slot].pid;       // 保存子进程ID
+        ch.slot = ngx_process_slot;                         // 保存子进程index
+        ch.fd = ngx_processes[ngx_process_slot].channel[0]; // 父进程持有channel[0]
 
         ngx_pass_open_channel(cycle, &ch);
     }

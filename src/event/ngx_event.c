@@ -38,12 +38,12 @@ static char *ngx_event_init_conf(ngx_cycle_t *cycle, void *conf);
 
 
 static ngx_uint_t     ngx_timer_resolution;
-sig_atomic_t          ngx_event_timer_alarm;
+sig_atomic_t          ngx_event_timer_alarm;    // 标记是否需要更新时间
 
 static ngx_uint_t     ngx_event_max_module;
 
 ngx_uint_t            ngx_event_flags;
-ngx_event_actions_t   ngx_event_actions;
+ngx_event_actions_t   ngx_event_actions;    //事件处理抽象接口
 
 
 static ngx_atomic_t   connection_counter = 1;

@@ -16,9 +16,9 @@
 
 typedef struct {
      ngx_uint_t  command;
-     ngx_pid_t   pid;
-     ngx_int_t   slot;
-     ngx_fd_t    fd;
+     ngx_pid_t   pid;   // 子进程ID
+     ngx_int_t   slot;  // 子进程index
+     ngx_fd_t    fd;    // 父进程中跟子进程进行通信的channel[0]
 } ngx_channel_t;
 
 
