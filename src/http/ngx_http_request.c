@@ -221,7 +221,8 @@ ngx_http_init_connection(ngx_connection_t *c)
         ngx_http_init_request(rev);
         return;
     }
-
+    // 将rev事件（用于触发读取头部信息事件）对象加入到nginx的事件计时红黑树内进行超时监控管理，
+    // 同时给它指定的超时时限为c->listening->post_accept_timeout
     ngx_add_timer(rev, c->listening->post_accept_timeout);
 
     if (ngx_handle_read_event(rev, 0) != NGX_OK) {

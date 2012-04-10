@@ -14,8 +14,12 @@
 ngx_mutex_t  *ngx_event_timer_mutex;
 #endif
 
-
+// 全局变量ngx_event_timer_rbtree封装了事件计时红黑树树结构
 ngx_thread_volatile ngx_rbtree_t  ngx_event_timer_rbtree;
+/*
+ * ngx_event_timer_sentinel属于红黑树节点类型变量，在红黑树的操作过程中当作哨兵使用，
+ * 同时它是static的，所以作用域仅限于模块内，指向红黑数末端的那个节点
+ */
 static ngx_rbtree_node_t          ngx_event_timer_sentinel;
 
 /*
@@ -53,7 +57,7 @@ ngx_event_find_timer(void)
 {
     ngx_msec_int_t      timer;
     ngx_rbtree_node_t  *node, *root, *sentinel;
-
+    // 当红黑树只有一个node，设置永不超时，一直等待
     if (ngx_event_timer_rbtree.root == &ngx_event_timer_sentinel) {
         return NGX_TIMER_INFINITE;
     }
@@ -62,13 +66,13 @@ ngx_event_find_timer(void)
 
     root = ngx_event_timer_rbtree.root;
     sentinel = ngx_event_timer_rbtree.sentinel;
-
+    // 找到最小的时间节点
     node = ngx_rbtree_min(root, sentinel);
 
     ngx_mutex_unlock(ngx_event_timer_mutex);
-
+    // 最快发生超时的事件对象的超时时刻与当前时刻的时间差
     timer = (ngx_msec_int_t) node->key - (ngx_msec_int_t) ngx_current_msec;
-
+    // 有可能小于0，小于0的时候，默认为0，0在epoll_wait中为非阻塞
     return (ngx_msec_t) (timer > 0 ? timer : 0);
 }
 

@@ -35,9 +35,9 @@ typedef void (*ngx_rbtree_insert_pt) (ngx_rbtree_node_t *root,
     ngx_rbtree_node_t *node, ngx_rbtree_node_t *sentinel);
 
 struct ngx_rbtree_s {
-    ngx_rbtree_node_t     *root;	//树根
-    ngx_rbtree_node_t     *sentinel;//哨兵nil
-    ngx_rbtree_insert_pt   insert;
+    ngx_rbtree_node_t     *root;	// 树根
+    ngx_rbtree_node_t     *sentinel;    // 哨兵nil
+    ngx_rbtree_insert_pt   insert;      // 插入操作函数指针
 };
 
 // 红黑树初始的根一开始设置为哨兵结点.

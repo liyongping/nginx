@@ -204,13 +204,14 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
 {
     ngx_uint_t  flags;
     ngx_msec_t  timer, delta;
-
+    // 配置指令timer_resolution，允许用户减少调用gettimeofday()的次数，提高性能
+    // 如果设置来ngx_timer_resolution，可能导致一些超时事件得不到及时的处理，所以设置ngx_timer_resolution合适的值
     if (ngx_timer_resolution) {
-        timer = NGX_TIMER_INFINITE;
+        timer = NGX_TIMER_INFINITE;     // epoll_wait将一直阻塞等待直到有事件来到
         flags = 0;
 
     } else {
-        timer = ngx_event_find_timer();
+        timer = ngx_event_find_timer();// 获取超时时长
         flags = NGX_UPDATE_TIME;
 
 #if (NGX_THREADS)
@@ -255,7 +256,7 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
 
     delta = ngx_current_msec;
     // 处理事件的函数（包括新连接建立事件），网络IO事件等等
-    (void) ngx_process_events(cycle, timer, flags);
+    (void) ngx_process_events(cycle, timer, flags);     // epoll中对应函数：ngx_epoll_process_events
 
     delta = ngx_current_msec - delta;
 
@@ -614,7 +615,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         return NGX_ERROR;
     }
 #endif
-
+    // 初始化红黑树
     if (ngx_event_timer_init(cycle->log) == NGX_ERROR) {
         return NGX_ERROR;
     }
@@ -639,7 +640,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     }
 
 #if !(NGX_WIN32)
-
+    // 设置个定时器，每隔ngx_timer_resolution更新一次时间
     if (ngx_timer_resolution && !(ngx_event_flags & NGX_USE_TIMER_EVENT)) {
         struct sigaction  sa;
         struct itimerval  itv;
