@@ -279,7 +279,7 @@ ngx_http_add_variable(ngx_conf_t *cf, ngx_str_t *name, ngx_uint_t flags)
     ngx_http_core_main_conf_t  *cmcf;
 
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
-
+    // 先检查变量是否在已添加
     key = cmcf->variables_keys->keys.elts;
     for (i = 0; i < cmcf->variables_keys->keys.nelts; i++) {
         if (name->len != key[i].key.len
@@ -289,16 +289,17 @@ ngx_http_add_variable(ngx_conf_t *cf, ngx_str_t *name, ngx_uint_t flags)
         }
 
         v = key[i].value;
-
+        // 如果已添加，并且是不可变的变量，则提示变量的重复添加
+        // 其它NGX_HTTP_VAR_CHANGEABLE就是为了让变量的重复添加时不出错，都指向同一变量
         if (!(v->flags & NGX_HTTP_VAR_CHANGEABLE)) {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "the duplicate \"%V\" variable", name);
             return NULL;
         }
-
+        // 如果变量已添加，并且有NGX_HTTP_VAR_CHANGEABLE表志，则直接返回
         return v;
     }
-
+    // 添加这个变量
     v = ngx_palloc(cf->pool, sizeof(ngx_http_variable_t));
     if (v == NULL) {
         return NULL;
@@ -309,7 +310,7 @@ ngx_http_add_variable(ngx_conf_t *cf, ngx_str_t *name, ngx_uint_t flags)
     if (v->name.data == NULL) {
         return NULL;
     }
-
+    // 注意，变量名不区分大小写
     ngx_strlow(v->name.data, name->data, name->len);
 
     v->set_handler = NULL;
@@ -401,11 +402,11 @@ ngx_http_get_indexed_variable(ngx_http_request_t *r, ngx_uint_t index)
                       "unknown variable index: %d", index);
         return NULL;
     }
-
+    // 变量已经获取过了，就不再计算变量的值，直接返回
     if (r->variables[index].not_found || r->variables[index].valid) {
         return &r->variables[index];
     }
-
+    // 如果变量是初次获取，则调用变量的get_handler来得到变量值，并缓存到 r->variables中去
     v = cmcf->variables.elts;
 
     if (v[index].get_handler(r, &r->variables[index], v[index].data)
@@ -417,7 +418,8 @@ ngx_http_get_indexed_variable(ngx_http_request_t *r, ngx_uint_t index)
 
         return &r->variables[index];
     }
-
+    // 变量获取失败，设置为不合法，以及未找到
+    // 注意我们在调用完本函数后，需要检查函数的返回值以及这两个属性
     r->variables[index].valid = 0;
     r->variables[index].not_found = 1;
 
@@ -433,10 +435,10 @@ ngx_http_get_flushed_variable(ngx_http_request_t *r, ngx_uint_t index)
     v = &r->variables[index];
 
     if (v->valid || v->not_found) {
-        if (!v->no_cacheable) {
+        if (!v->no_cacheable) {// 变量已经获取过了，而且是合法的并且可缓存的，则直接返回
             return v;
         }
-
+        // 否则，清除标志，并再次获取变量的值
         v->valid = 0;
         v->not_found = 0;
     }
@@ -1980,7 +1982,7 @@ ngx_http_variables_init_vars(ngx_conf_t *cf)
 
     v = cmcf->variables.elts;
     key = cmcf->variables_keys->keys.elts;
-
+    // 是否是添加过
     for (i = 0; i < cmcf->variables.nelts; i++) {
 
         for (n = 0; n < cmcf->variables_keys->keys.nelts; n++) {
@@ -2003,7 +2005,7 @@ ngx_http_variables_init_vars(ngx_conf_t *cf)
                 goto next;
             }
         }
-
+        // 检查是否是有特定规则的变量
         if (ngx_strncmp(v[i].name.data, "http_", 5) == 0) {
             v[i].get_handler = ngx_http_variable_unknown_header_in;
             v[i].data = (uintptr_t) &v[i].name;
@@ -2050,7 +2052,7 @@ ngx_http_variables_init_vars(ngx_conf_t *cf)
         continue;
     }
 
-
+    // 如果变量有设置NGX_HTTP_VAR_NOHASH，则会跳过该变量
     for (n = 0; n < cmcf->variables_keys->keys.nelts; n++) {
         av = key[n].value;
 

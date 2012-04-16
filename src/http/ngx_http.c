@@ -312,7 +312,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             }
         }
     }
-
+    // ngx_http_variables_init_vars中，会做两个事情，检查索引变量，以及初始化变量的hash表
     if (ngx_http_variables_init_vars(cf) != NGX_OK) {
         return NGX_CONF_ERROR;
     }

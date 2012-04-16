@@ -33,23 +33,32 @@ typedef ngx_int_t (*ngx_http_get_variable_pt) (ngx_http_request_t *r,
 
 
 struct ngx_http_variable_s {
-    ngx_str_t                     name;   /* must be first to build the hash */
-    ngx_http_set_variable_pt      set_handler;
-    ngx_http_get_variable_pt      get_handler;
-    uintptr_t                     data;
-    ngx_uint_t                    flags;
-    ngx_uint_t                    index;
+    ngx_str_t                     name;   /* 变量的名称, must be first to build the hash*/
+    ngx_http_set_variable_pt      set_handler;  // 变量的设置函数
+    ngx_http_get_variable_pt      get_handler;  // 变量的get函数
+    uintptr_t                     data;         // 传给get与set_handler的值
+    ngx_uint_t                    flags;        // 变量的标志
+    ngx_uint_t                    index;        // 如果有索引，则是变量的索引号
 };
 
-
+// name: 即变量的名字
+// flags: 如果同一个变量要多次添加，则flags应该设置 NGX_HTTP_VAR_CHANGEABLE
+// 否则，多次添加将会提示重复
+// flags表示可以是：NGX_HTTP_VAR_CHANGEABLE
+//                 NGX_HTTP_VAR_NOCACHEABLE
+//                 NGX_HTTP_VAR_INDEXED
+//                 NGX_HTTP_VAR_NOHASH
 ngx_http_variable_t *ngx_http_add_variable(ngx_conf_t *cf, ngx_str_t *name,
     ngx_uint_t flags);
+
+// 通过ngx_http_get_variable_index来添加一个变量的索引
 ngx_int_t ngx_http_get_variable_index(ngx_conf_t *cf, ngx_str_t *name);
 ngx_http_variable_value_t *ngx_http_get_indexed_variable(ngx_http_request_t *r,
     ngx_uint_t index);
 ngx_http_variable_value_t *ngx_http_get_flushed_variable(ngx_http_request_t *r,
     ngx_uint_t index);
 
+// 没有索引过的变量，则只能通过ngx_http_get_variable函数来获取, key 由ngx_hash_strlow来计算, 所以变量名是没有大小写区分的
 ngx_http_variable_value_t *ngx_http_get_variable(ngx_http_request_t *r,
     ngx_str_t *name, ngx_uint_t key);
 
