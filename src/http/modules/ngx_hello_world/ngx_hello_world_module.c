@@ -3,7 +3,7 @@
 #include <ngx_http.h>
 #include <nginx.h>
 
-static char *ngx_hello_world(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+static char *ngx_hello_world_setup(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 static ngx_int_t ngx_hello_world_get_output(ngx_http_request_t *r, char *out_buf);
 static ngx_int_t ngx_hello_world_handler(ngx_http_request_t *r);
 
@@ -11,7 +11,7 @@ static ngx_int_t ngx_hello_world_handler(ngx_http_request_t *r);
 static ngx_command_t  ngx_hello_world_commands[] = {
     { ngx_string("ngx_hello_world"),
       NGX_HTTP_LOC_CONF|NGX_CONF_NOARGS,
-      ngx_hello_world,
+      ngx_hello_world_setup,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
       NULL },
@@ -115,7 +115,7 @@ ngx_hello_world_handler(ngx_http_request_t *r)
 }
 
 static char *
-ngx_hello_world(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+ngx_hello_world_setup(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     ngx_http_core_loc_conf_t *clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
 
@@ -124,4 +124,3 @@ ngx_hello_world(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     return NGX_CONF_OK;
 }
-
