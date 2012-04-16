@@ -67,9 +67,11 @@ static void ngx_slab_free_pages(ngx_slab_pool_t *pool, ngx_slab_page_t *page,
 static void ngx_slab_error(ngx_slab_pool_t *pool, ngx_uint_t level,
     char *text);
 
-
+// slab的一次最大分配空间，默认为pagesize/2
 static ngx_uint_t  ngx_slab_max_size;
+// slab精确分配大小，这个是一个分界点，通常是4096/32
 static ngx_uint_t  ngx_slab_exact_size;
+// slab精确分配大小对应的移位数
 static ngx_uint_t  ngx_slab_exact_shift;
 
 
@@ -84,8 +86,11 @@ ngx_slab_init(ngx_slab_pool_t *pool)
 
     /* STUB */
     if (ngx_slab_max_size == 0) {
+        // 最大分配空间为页大小的一半
         ngx_slab_max_size = ngx_pagesize / 2;
+        // 精确分配大小，8为一个字节的位数，sizeof(uintptr_t)为一个 uintptr_t的字节，我们后面会根据这个size来判断使用不同的分配算法
         ngx_slab_exact_size = ngx_pagesize / (8 * sizeof(uintptr_t));
+        // 计算出此精确分配的移位数
         for (n = ngx_slab_exact_size; n >>= 1; ngx_slab_exact_shift++) {
             /* void */
         }
@@ -96,12 +101,14 @@ ngx_slab_init(ngx_slab_pool_t *pool)
 
     p = (u_char *) pool + sizeof(ngx_slab_pool_t);
     size = pool->end - p;
-
+    // 将开始的size个字节设置为0
     ngx_slab_junk(p, size);
 
     slots = (ngx_slab_page_t *) p;
+    // 最大移位数，减去最小移位数，得到需要的slot数量
+    // 默认为8
     n = ngx_pagesize_shift - pool->min_shift;
-
+    // 初始化各个slot
     for (i = 0; i < n; i++) {
         slots[i].slab = 0;
         slots[i].next = &slots[i];
@@ -109,7 +116,7 @@ ngx_slab_init(ngx_slab_pool_t *pool)
     }
 
     p += n * sizeof(ngx_slab_page_t);
-
+    // 计算出当前内存空间可以放下多少个页，此时的计算没有进行对齐，在后面会进行调整
     pages = (ngx_uint_t) (size / (ngx_pagesize + sizeof(ngx_slab_page_t)));
 
     ngx_memzero(p, pages * sizeof(ngx_slab_page_t));
@@ -122,12 +129,13 @@ ngx_slab_init(ngx_slab_pool_t *pool)
     pool->pages->slab = pages;
     pool->pages->next = &pool->free;
     pool->pages->prev = (uintptr_t) &pool->free;
-
+    // 计算出对齐后的返回内存的地址
     pool->start = (u_char *)
                   ngx_align_ptr((uintptr_t) p + pages * sizeof(ngx_slab_page_t),
                                  ngx_pagesize);
-
+    // 用于判断我们对齐后的空间，是否需要进行调整
     m = pages - (pool->end - pool->start) / ngx_pagesize;
+    // 说明之前是没有对齐过的，由于对齐之后，最后那一页，有可能不够一页，所以要去掉那一块
     if (m > 0) {
         pages -= m;
         pool->pages->slab = pages;
@@ -160,7 +168,8 @@ ngx_slab_alloc_locked(ngx_slab_pool_t *pool, size_t size)
     uintptr_t         p, n, m, mask, *bitmap;
     ngx_uint_t        i, slot, shift, map;
     ngx_slab_page_t  *page, *prev, *slots;
-
+    // 如果超出slab最大可分配大小，即大于2048，则我们需要计算出需要的page数，
+    // 然后从空闲页中分配出连续的几个可用页
     if (size >= ngx_slab_max_size) {
 
         ngx_log_debug1(NGX_LOG_DEBUG_ALLOC, ngx_cycle->log, 0,
@@ -168,8 +177,11 @@ ngx_slab_alloc_locked(ngx_slab_pool_t *pool, size_t size)
 
         page = ngx_slab_alloc_pages(pool, (size + ngx_pagesize - 1)
                                           >> ngx_pagesize_shift);
+        // 计算需要的页数，然后分配指针页数
         if (page) {
+            // 由返回page在页数组中的偏移量，计算出实际数组地址的偏移量
             p = (page - pool->pages) << ngx_pagesize_shift;
+            // 计算出实际的数据地址
             p += (uintptr_t) pool->start;
 
         } else {
@@ -178,15 +190,20 @@ ngx_slab_alloc_locked(ngx_slab_pool_t *pool, size_t size)
 
         goto done;
     }
-
+    // 如果小于2048，则启用slab分配算法进行分配
+    // 计算出此size的移位数以及此size对应的slot以及移位数
     if (size > pool->min_size) {
         shift = 1;
+        // 计算移位数
         for (s = size - 1; s >>= 1; shift++) { /* void */ }
+        // 由移位数得到slot
         slot = shift - pool->min_shift;
 
     } else {
+        // 小于最小可分配大小的都放到一个slot里面
         size = pool->min_size;
         shift = pool->min_shift;
+        // 因为小于最小分配的，所以就放在第一个slot里面
         slot = 0;
     }
 
@@ -194,16 +211,24 @@ ngx_slab_alloc_locked(ngx_slab_pool_t *pool, size_t size)
                    "slab alloc: %uz slot: %ui", size, slot);
 
     slots = (ngx_slab_page_t *) ((u_char *) pool + sizeof(ngx_slab_pool_t));
+    // 得到当前slot所占用的页
     page = slots[slot].next;
-
+    // 找到一个可用空间
     if (page->next != page) {
-
+        // 分配大小小于128字节时的算法，看不懂的童鞋可以先看等于128字节的情况
+        // 当分配空间小于128字节时，我们不可能用一个int来表示这些块的占用情况
+        // 此时，我们就需要几个int了，即一个 bitmap数组
+        // 我们此时没有使用page->slab，而是使用页数据空间的开始几个int空间来表示了
+        // 看代码
         if (shift < ngx_slab_exact_shift) {
 
             do {
+                // 得到页数据部分
                 p = (page - pool->pages) << ngx_pagesize_shift;
+                // 页的开始几个int大小的空间来存放位图数据
                 bitmap = (uintptr_t *) (pool->start + p);
-
+                // 当前页，在当前size下可分成map*32个块
+                // 我们需要map个int来表示这些块空间
                 map = (1 << (ngx_pagesize_shift - shift))
                           / (sizeof(uintptr_t) * 8);
 
@@ -213,29 +238,32 @@ ngx_slab_alloc_locked(ngx_slab_pool_t *pool, size_t size)
 
                         for (m = 1, i = 0; m; m <<= 1, i++) {
                             if ((bitmap[n] & m)) {
+                                // 当前位表示的块已被使用了
                                 continue;
                             }
-
+                            // 设置已占用
                             bitmap[n] |= m;
 
                             i = ((n * sizeof(uintptr_t) * 8) << shift)
                                 + (i << shift);
-
+                            // 如果当前bitmap所表示的空间已都被占用，就查找下一个bitmap
                             if (bitmap[n] == NGX_SLAB_BUSY) {
                                 for (n = n + 1; n < map; n++) {
+                                    // 找到下一个还剩下空间的bitmap
                                      if (bitmap[n] != NGX_SLAB_BUSY) {
                                          p = (uintptr_t) bitmap + i;
 
                                          goto done;
                                      }
                                 }
-
+                                // 剩下所有的bitmap都被占用了，表明当前的页已完全被使用了，把当前页从链表中删除
                                 prev = (ngx_slab_page_t *)
                                             (page->prev & ~NGX_SLAB_PAGE_MASK);
                                 prev->next = page->next;
                                 page->next->prev = page->prev;
 
                                 page->next = NULL;
+                                // 小内存分配
                                 page->prev = NGX_SLAB_SMALL;
                             }
 
@@ -251,24 +279,28 @@ ngx_slab_alloc_locked(ngx_slab_pool_t *pool, size_t size)
             } while (page);
 
         } else if (shift == ngx_slab_exact_shift) {
-
+            // 如果分配大小正好是128字节，则一页可以分成32个块，我们可以用一个int来表示这些个块的使用情况
+            // 这里我们使用page->slab来表示这些块的使用情况，当所有块被占用后，该值就变成了0xffffffff，即NGX_SLAB_BUSY表示该块都被占用了
             do {
                 if (page->slab != NGX_SLAB_BUSY) {
 
                     for (m = 1, i = 0; m; m <<= 1, i++) {
+                        // 如果当前位被使用了，就继续查找下一块
                         if ((page->slab & m)) {
                             continue;
                         }
 
                         page->slab |= m;
-
+                        // 最后一块也被使用了，就表示此页已使用完
                         if (page->slab == NGX_SLAB_BUSY) {
+                            // 将当前页从链表中移除
                             prev = (ngx_slab_page_t *)
                                             (page->prev & ~NGX_SLAB_PAGE_MASK);
                             prev->next = page->next;
                             page->next->prev = page->prev;
 
                             page->next = NULL;
+                            // 标识使用类型，精确
                             page->prev = NGX_SLAB_EXACT;
                         }
 
@@ -285,25 +317,43 @@ ngx_slab_alloc_locked(ngx_slab_pool_t *pool, size_t size)
             } while (page);
 
         } else { /* shift > ngx_slab_exact_shift */
+            /*
+                当需要分配的空间大于128时，我们可以用一个int的位来表示这些空间
+                所以我们依然采用跟等于128时类似的情况，用page->slab来表示
+                但由于 大于128的情况比较多，移位数分别为8、9、10、11这些情况
+                对于一个页，我们如何来知道这个页的分配大小呢？
+                而我们知道，最小我们只需要使用16位即可表示这些空间了，即分配大小为256~512时
+                那么我们采用高16位来表示这些空间的占用情况
+                而最低位，我们也利用起来，表示此页的分配大小，即保存移位数
+                比如我们分配256，当分配第一个空间时，此时的page->slab位图情况是：0x0001008
+                那分配下一空间就是0x0003008 了，当为0xffff008时，就分配完了
 
+                page->slab & NGX_SLAB_SHIFT_MASK 即得到最低一位的值，其实就是当前页的分配大小的移位数
+                ngx_pagesize_shift减掉后，就是在一页中标记这些块所需要的移位数，也就是块数对应的移位数
+             */
             n = ngx_pagesize_shift - (page->slab & NGX_SLAB_SHIFT_MASK);
+            // 得到一个页面所能放下的块数
             n = 1 << n;
+            // 得到表示这些块数都用完的bitmap，用现在是低16位的
             n = ((uintptr_t) 1 << n) - 1;
+            // 将低16位转换成高16位，因为我们是用高16位来表示空间地址的占用情况的
             mask = n << NGX_SLAB_MAP_SHIFT;
 
             do {
+                // 判断高16位是否全被占用了
                 if ((page->slab & NGX_SLAB_MAP_MASK) != mask) {
 
                     for (m = (uintptr_t) 1 << NGX_SLAB_MAP_SHIFT, i = 0;
                          m & mask;
                          m <<= 1, i++)
                     {
+                        // 当前块是否被占用
                         if ((page->slab & m)) {
                             continue;
                         }
 
                         page->slab |= m;
-
+                        // 当前页是否完全被占用完
                         if ((page->slab & NGX_SLAB_MAP_MASK) == mask) {
                             prev = (ngx_slab_page_t *)
                                             (page->prev & ~NGX_SLAB_PAGE_MASK);
@@ -327,7 +377,7 @@ ngx_slab_alloc_locked(ngx_slab_pool_t *pool, size_t size)
             } while (page);
         }
     }
-
+    // 如果当前slab对应的page中没有空间可分配了，则重新从空闲page中分配一个页
     page = ngx_slab_alloc_pages(pool, 1);
 
     if (page) {
