@@ -25,9 +25,20 @@ typedef void (*ngx_http_set_variable_pt) (ngx_http_request_t *r,
 typedef ngx_int_t (*ngx_http_get_variable_pt) (ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data);
 
-
+/*
+NGX_HTTP_VAR_CHANGEABLE宏的时候意味着，该变量可以重复配置，一般后配置的会覆盖前面的配置。如：
+set $file $1
+set $file $2
+那么结果就是file的最终值就是$2所代表的
+ */
 #define NGX_HTTP_VAR_CHANGEABLE   1
+// NGX_HTTP_VAR_NOCACHEABLE宏所影响的正是ngx_variable_value_t结构中的no_cacheable，凡是有该标记的变量，都要通过get_handler来获取变量的值
+// 这种变量往往是跟特定的请求紧密相关的，如host，uri，args之类的，处理时每次重新获取新值时必要的
 #define NGX_HTTP_VAR_NOCACHEABLE  2
+/*
+NGX_HTTP_VAR_INDEXED和NGX_HTTP_VAR_NOHASH
+这两个宏主要是在SSI相关处理中用到，而ssi的处理需要用到cmcf->variables_hash，这是hash表，可以高效的找到变量
+ */
 #define NGX_HTTP_VAR_INDEXED      4
 #define NGX_HTTP_VAR_NOHASH       8
 
